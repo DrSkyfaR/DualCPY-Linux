@@ -50,25 +50,62 @@ Technical features:
 
 ### System Dependencies
 
-```bash
-# Arch Linux / Manjaro / CachyOS
-sudo pacman -S android-tools scrcpy python-pygame python-xlib
+#### Arch Linux / Manjaro / CachyOS
 
-# Debian / Ubuntu
-sudo apt install adb scrcpy python3-dev python3-xlib python3-pygame
+```bash
+sudo pacman -S git base-devel android-tools scrcpy python-pygame python-xlib
 ```
 
-> **Note:** `python3-pygame` may not be available in older Debian/Ubuntu releases.
-> In that case install via pip after installing the system deps above:
+> `python-pygame` and `python-xlib` are installed here from the official repos.
+> **Skip the `pip install -r requirements.txt` step** — all runtime dependencies are already present.
+> `base-devel` (includes `gcc`) is only needed if you intend to build a standalone executable.
+
+#### Debian / Ubuntu
+
+```bash
+sudo apt install git adb python3-dev python3-xlib python3-pygame build-essential
+```
+
+`scrcpy` may not be in the default `stable` repo. Enable backports first:
+
+```bash
+# Enable backports (Debian stable only — skip if already enabled or on Ubuntu)
+echo "deb http://deb.debian.org/debian $(lsb_release -cs)-backports main" \
+  | sudo tee /etc/apt/sources.list.d/backports.list
+sudo apt update
+sudo apt install -t $(lsb_release -cs)-backports scrcpy
+```
+
+> On Ubuntu `scrcpy` is available in the universe repository. Just run:
 > ```bash
-> pip install pygame>=2.6.0
+> sudo apt install scrcpy
 > ```
 
 ### Python Dependencies
 
+#### Arch Linux
+
+All runtime dependencies (`pygame`, `python-xlib`) are already installed via `pacman` above.
+No `pip` step is needed to *run* ThorCPY. Skip to **Installation**.
+
+If you want to build a standalone executable (optional), create a venv:
+
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install pyinstaller
+```
+
+#### Debian / Ubuntu / Other distros
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+> Always activate the venv (`source .venv/bin/activate`) before running `python3 main.py`
+> or `python build.py` in subsequent sessions.
 
 `requirements.txt` installs:
 - `pygame>=2.6.0` — UI rendering
@@ -97,27 +134,45 @@ Before connecting your AYN Thor:
 ```bash
 # 1. Clone the repository
 git clone https://github.com/DrSkyfaR/ThorCPY-Linux.git
-cd ThorCPY-Linux/
+cd ThorCPY-Linux
 
 # 2. Install system dependencies (see Requirements above)
+```
 
-# 3. Install Python dependencies
-pip install -r requirements.txt
+**Arch Linux** — deps are already installed via `pacman`, run directly:
 
-# 4. Run ThorCPY
+```bash
 python3 main.py
 ```
+
+**Debian / Ubuntu / Other distros** — set up a venv first:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 main.py
+```
+
+> On subsequent runs, re-activate the venv before launching:
+> ```bash
+> source .venv/bin/activate && python3 main.py
+> ```
 
 ### Option 2: Build a Standalone Executable
 
 ```bash
-# 1. Install PyInstaller
+# Arch — activate a venv that has pyinstaller
+python -m venv .venv && source .venv/bin/activate
 pip install pyinstaller
 
-# 2. Run the build script
+# Debian/Ubuntu — activate the venv created above
+source .venv/bin/activate
+
+# Run the build script
 python build.py
 
-# 3. Find your binary in dist/ThorCPY
+# Find your binary in dist/ThorCPY
 # The executable must be placed in a folder containing: bin/, config/, logs/
 ```
 
@@ -270,6 +325,35 @@ To increase verbosity, change `logging.INFO` to `logging.DEBUG` in `main.py`.
 ### Layout Issues
 - Delete `config/layout.json` and `config/config.json` to reset to defaults
 - Reload at 0.6 scale, adjust, and save
+
+### Running in a Distrobox Container (Bazzite / Immutable Systems)
+
+ThorCPY can run inside a [Distrobox](https://distrobox.it/) container on immutable systems like Bazzite.
+
+**Arch container** (`ghcr.io/ublue-os/bazzite-arch`):
+```bash
+sudo pacman -S git base-devel android-tools scrcpy python-pygame python-xlib
+git clone https://github.com/DrSkyfaR/ThorCPY-Linux.git && cd ThorCPY-Linux
+python3 main.py
+```
+
+**Debian container** (`docker.io/library/debian:stable-slim` or similar):
+```bash
+sudo apt update
+sudo apt install git curl lsb-release python3 python3-venv python3-dev \
+     python3-xlib python3-pygame build-essential android-tools-adb
+# Enable backports for scrcpy
+echo "deb http://deb.debian.org/debian $(lsb_release -cs)-backports main" \
+  | sudo tee /etc/apt/sources.list.d/backports.list
+sudo apt update && sudo apt install -t $(lsb_release -cs)-backports scrcpy
+git clone https://github.com/DrSkyfaR/ThorCPY-Linux.git && cd ThorCPY-Linux
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python3 main.py
+```
+
+> Make sure the container has access to the host display (`DISPLAY`/`WAYLAND_DISPLAY`)
+> and that `adb` on the host (or inside the container) can see your USB device.
 
 ---
 
