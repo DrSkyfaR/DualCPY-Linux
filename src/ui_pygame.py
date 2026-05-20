@@ -1321,6 +1321,15 @@ class PygameUI:
             idx = next((i for i, e in enumerate(self.fb_local_entries) if e[0] == name), None)
             self.fb_local_selected = None if self.fb_local_selected == idx else idx
 
+    def _fb_refresh_device(self):
+        """Reload current device directory."""
+        self._fb_load_device(self.fb_device_path)
+
+    def _fb_refresh_local(self):
+        """Reload current local directory."""
+        self.fb_local_entries = list_local_dir(self.fb_local_path)
+        self.fb_local_selected = None
+
     def _fb_back_device(self):
         parent = self.fb_device_path.rstrip("/").rsplit("/", 1)[0] or "/"
         self.fb_device_path = parent
@@ -1507,6 +1516,32 @@ class PygameUI:
             self.fb_local_path, self.fb_local_entries,
             self.fb_local_selected, self.fb_local_scroll,
             False, "loc", mx, my, m_click)
+
+        # Refresh buttons — drawn over the right edge of each breadcrumb bar
+        _crumb_y  = FB_LIST_TOP - 24
+        _crumb_h  = 20
+        _ref_w    = 30
+        ref_dev_rect = pygame.Rect(FB_PAD + FB_PANEL_W - _ref_w, _crumb_y, _ref_w, _crumb_h)
+        ref_loc_rect = pygame.Rect(
+            FB_RIGHT_X + (CONTROL_PANEL_WIDTH - FB_RIGHT_X - FB_PAD) - _ref_w,
+            _crumb_y, _ref_w, _crumb_h
+        )
+
+        for ref_rect, ref_key in ((ref_dev_rect, "fb_ref_dev"), (ref_loc_rect, "fb_ref_loc")):
+            is_hov = ref_rect.collidepoint(mx, my)
+            col = self.colors["accent"] if is_hov else (50, 55, 70)
+            pygame.draw.rect(self.screen, col, ref_rect, border_radius=3)
+            r_surf = self.font_sm.render("↺", True, WHITE_TEXT)
+            self.screen.blit(r_surf, r_surf.get_rect(center=ref_rect.center))
+            if m_click and is_hov and not self.m_locked:
+                self.pressed_button = ref_key
+            if not m_click and self.pressed_button == ref_key:
+                if is_hov:
+                    if ref_key == "fb_ref_dev":
+                        self._fb_refresh_device()
+                    else:
+                        self._fb_refresh_local()
+                self.pressed_button = None
 
         # Handle clicks → navigate or select
         if dev_clicked is not None and dev_clicked < len(self.fb_device_entries):
