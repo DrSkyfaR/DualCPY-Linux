@@ -24,6 +24,31 @@ import logging
 import sys
 
 from src.file_browser import FileBrowserBackend, list_local_dir
+import math as _math
+
+
+def _draw_refresh_icon(surf, rect, color, line_w=2):
+    """Draw a circular refresh-arrow icon using pygame primitives."""
+    cx, cy = rect.centerx, rect.centery
+    r = max(4, min(rect.w, rect.h) // 2 - 3)
+    arc_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+
+    # 280° arc; gap sits near the top-right (between ~40° and ~320°)
+    pygame.draw.arc(surf, color, arc_rect,
+                    _math.radians(40), _math.radians(320), line_w)
+
+    # Arrowhead at the 40° end pointing in the clockwise-on-screen direction
+    a = _math.radians(40)
+    px = cx + r * _math.cos(a)
+    py = cy - r * _math.sin(a)          # screen y is inverted
+    # Clockwise-on-screen motion direction at angle a (decreasing a):
+    dx, dy = _math.sin(a), -_math.cos(a)
+    perp_x, perp_y = dy, -dx           # 90° perpendicular
+    sz = max(3, r // 2)
+    tip = (px + dx * sz,           py + dy * sz)
+    b1  = (px + perp_x * sz * 0.6, py + perp_y * sz * 0.6)
+    b2  = (px - perp_x * sz * 0.6, py - perp_y * sz * 0.6)
+    pygame.draw.polygon(surf, color, [tip, b1, b2])
 
 # Platform specific imports
 if sys.platform == "win32":
@@ -1531,8 +1556,7 @@ class PygameUI:
             is_hov = ref_rect.collidepoint(mx, my)
             col = self.colors["accent"] if is_hov else (50, 55, 70)
             pygame.draw.rect(self.screen, col, ref_rect, border_radius=3)
-            r_surf = self.font_sm.render("↺", True, WHITE_TEXT)
-            self.screen.blit(r_surf, r_surf.get_rect(center=ref_rect.center))
+            _draw_refresh_icon(self.screen, ref_rect, WHITE_TEXT)
             if m_click and is_hov and not self.m_locked:
                 self.pressed_button = ref_key
             if not m_click and self.pressed_button == ref_key:
