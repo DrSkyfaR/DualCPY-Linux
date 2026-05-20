@@ -23,6 +23,8 @@ import time
 import logging
 import sys
 
+from src.file_browser import FileBrowserBackend, list_local_dir
+
 # Platform specific imports
 if sys.platform == "win32":
     try:
@@ -181,11 +183,30 @@ QUICK_CONNECT_BTN_Y = 580
 QUICK_CONNECT_BTN_WIDTH = 110
 QUICK_CONNECT_BTN_HEIGHT = 30
 
-# Settings Button
+# Settings Button (narrowed to make room for Files button)
 SETTINGS_BUTTON_X = 40
 SETTINGS_BUTTON_Y = 625
-SETTINGS_BUTTON_WIDTH = 370
+SETTINGS_BUTTON_WIDTH = 175
 SETTINGS_BUTTON_HEIGHT = 35
+
+# Files Button
+FILES_BUTTON_X = 225
+FILES_BUTTON_Y = 625
+FILES_BUTTON_WIDTH = 185
+FILES_BUTTON_HEIGHT = 35
+
+# File Browser overlay layout
+FB_PAD = 15
+FB_PANEL_W = 200          # width of each panel
+FB_DIVIDER_X = FB_PAD + FB_PANEL_W + FB_PAD // 2   # x of centre divider line
+FB_RIGHT_X = FB_DIVIDER_X + 5                        # x start of right panel
+FB_LIST_TOP = 110         # y where file rows start
+FB_LIST_BOTTOM = 760      # y where file rows end
+FB_ROW_H = 26             # height of each file row
+FB_BTN_H = 34             # action button height
+FB_BTN_Y = FB_LIST_BOTTOM + 8   # y of action buttons
+FB_STATUS_Y = FB_BTN_Y + FB_BTN_H + 10
+FB_CLOSE_Y = CONTROL_PANEL_HEIGHT - 55
 
 STATUS_TEXT_X = 225
 STATUS_TEXT_Y = 675
@@ -550,6 +571,22 @@ class PygameUI:
         self.wireless_status = ""
         self.wireless_status_color = None
         self.wireless_busy = False
+
+        # File Browser Overlay State
+        self.show_filebrowser = False
+        self.fb_device_path = "/sdcard"
+        self.fb_local_path = os.path.expanduser("~")
+        self.fb_device_entries = []   # list of (name, is_dir, size_str)
+        self.fb_local_entries = []
+        self.fb_device_selected = None   # index into fb_device_entries
+        self.fb_local_selected = None    # index into fb_local_entries
+        self.fb_device_scroll = 0
+        self.fb_local_scroll = 0
+        self.fb_loading = False          # waiting for ADB ls result
+        self.fb_transfer_busy = False
+        self.fb_status = ""
+        self.fb_status_color = None
+        self._fb_backend = None          # FileBrowserBackend, created on first open
 
         logger.info("PygameUI initialization complete")
 
@@ -1216,6 +1253,361 @@ class PygameUI:
                 self.show_settings = False
             self.pressed_button = None
 
+    # ── File Browser ────────────────────────────────────────────────────────
+
+    def _fb_open(self):
+        """Open the file browser overlay and initialise state."""
+        adb  = self.l.scrcpy.adb_bin
+        serial = self.l.scrcpy.serial
+        if not adb or not serial:
+            self.show_status("No device connected", "error", 3.0)
+            return
+        self._fb_backend = FileBrowserBackend(adb, serial)
+        self.fb_device_path = "/sdcard"
+        self.fb_local_path  = os.path.expanduser("~")
+        self.fb_device_entries = []
+        self.fb_local_entries  = list_local_dir(self.fb_local_path)
+        self.fb_device_selected = None
+        self.fb_local_selected  = None
+        self.fb_device_scroll = 0
+        self.fb_local_scroll  = 0
+        self.fb_status = ""
+        self.fb_transfer_busy = False
+        self.show_filebrowser = True
+        self._fb_load_device(self.fb_device_path)
+
+    def _fb_load_device(self, path):
+        """Trigger async ADB ls for the given device path."""
+        self.fb_loading = True
+        self.fb_device_entries = []
+        self.fb_device_selected = None
+        self.fb_device_scroll = 0
+
+        def _cb(entries, error):
+            self.fb_loading = False
+            if error:
+                self.fb_status = f"Error: {error}"
+                self.fb_status_color = self.colors["danger"]
+                self.fb_device_entries = []
+            else:
+                self.fb_device_entries = entries or []
+                self.fb_status = ""
+
+        self._fb_backend.list_device_dir(path, _cb)
+
+    def _fb_navigate_device(self, name, is_dir):
+        if is_dir:
+            new_path = self.fb_device_path.rstrip("/") + "/" + name
+            self.fb_device_path = new_path
+            self._fb_load_device(new_path)
+        else:
+            # Toggle selection
+            idx = next((i for i, e in enumerate(self.fb_device_entries) if e[0] == name), None)
+            self.fb_device_selected = None if self.fb_device_selected == idx else idx
+
+    def _fb_navigate_local(self, name, is_dir):
+        if is_dir:
+            new_path = os.path.join(self.fb_local_path, name)
+            try:
+                entries = list_local_dir(new_path)
+                self.fb_local_path = new_path
+                self.fb_local_entries = entries
+                self.fb_local_selected = None
+                self.fb_local_scroll = 0
+            except Exception as e:
+                self.fb_status = str(e)[:60]
+                self.fb_status_color = self.colors["danger"]
+        else:
+            idx = next((i for i, e in enumerate(self.fb_local_entries) if e[0] == name), None)
+            self.fb_local_selected = None if self.fb_local_selected == idx else idx
+
+    def _fb_back_device(self):
+        parent = self.fb_device_path.rstrip("/").rsplit("/", 1)[0] or "/"
+        self.fb_device_path = parent
+        self._fb_load_device(parent)
+
+    def _fb_back_local(self):
+        parent = os.path.dirname(self.fb_local_path)
+        if parent != self.fb_local_path:
+            self.fb_local_path = parent
+            self.fb_local_entries = list_local_dir(parent)
+            self.fb_local_selected = None
+            self.fb_local_scroll = 0
+
+    def _fb_pull(self):
+        """Download selected device file to current local directory."""
+        if self.fb_device_selected is None or self.fb_transfer_busy:
+            return
+        name, is_dir, _ = self.fb_device_entries[self.fb_device_selected]
+        device_path = self.fb_device_path.rstrip("/") + "/" + name
+        local_dir   = self.fb_local_path
+        self.fb_transfer_busy = True
+        self.fb_status = f"Downloading {name}..."
+        self.fb_status_color = self.colors["warning"]
+
+        def _cb(success, msg):
+            self.fb_transfer_busy = False
+            self.fb_status = msg
+            self.fb_status_color = self.colors["success"] if success else self.colors["danger"]
+            if success:
+                self.fb_local_entries = list_local_dir(self.fb_local_path)
+
+        self._fb_backend.pull_file(device_path, local_dir, _cb)
+
+    def _fb_push(self):
+        """Upload selected local file to current device directory."""
+        if self.fb_local_selected is None or self.fb_transfer_busy:
+            return
+        name, is_dir, _ = self.fb_local_entries[self.fb_local_selected]
+        local_path  = os.path.join(self.fb_local_path, name)
+        device_dir  = self.fb_device_path
+        self.fb_transfer_busy = True
+        self.fb_status = f"Uploading {name}..."
+        self.fb_status_color = self.colors["warning"]
+
+        def _cb(success, msg):
+            self.fb_transfer_busy = False
+            self.fb_status = msg
+            self.fb_status_color = self.colors["success"] if success else self.colors["danger"]
+            if success:
+                self._fb_load_device(self.fb_device_path)
+
+        self._fb_backend.push_file(local_path, device_dir, _cb)
+
+    def _fb_draw_panel(self, x, w, path, entries, selected_idx, scroll,
+                       loading, panel_id, mx, my, m_click):
+        """
+        Draw one file-browser panel. Returns (new_selected_idx, new_scroll, clicked_entry_idx).
+        clicked_entry_idx is set on click release to trigger navigation / selection.
+        """
+        # Path breadcrumb bar
+        path_surf = self.font_sm.render(path[-38:] if len(path) > 38 else path, True, self.colors["text"])
+        crumb_rect = pygame.Rect(x, FB_LIST_TOP - 24, w, 20)
+        pygame.draw.rect(self.screen, self.colors["panel"], crumb_rect, border_radius=2)
+        self.screen.blit(path_surf, (x + 4, FB_LIST_TOP - 22))
+
+        # Panel border
+        panel_rect = pygame.Rect(x, FB_LIST_TOP, w, FB_LIST_BOTTOM - FB_LIST_TOP)
+        pygame.draw.rect(self.screen, self.colors["border"], panel_rect, 1, border_radius=3)
+
+        clicked_idx = None
+        new_selected = selected_idx
+        new_scroll   = scroll
+
+        if loading:
+            loading_surf = self.font_sm.render("Loading...", True, self.colors["warning"])
+            self.screen.blit(loading_surf, (x + 8, FB_LIST_TOP + 12))
+            return new_selected, new_scroll, clicked_idx
+
+        if not entries:
+            empty_surf = self.font_sm.render("(empty)", True, (100, 100, 100))
+            self.screen.blit(empty_surf, (x + 8, FB_LIST_TOP + 12))
+            return new_selected, new_scroll, clicked_idx
+
+        visible_rows = (FB_LIST_BOTTOM - FB_LIST_TOP) // FB_ROW_H
+        new_scroll = max(0, min(scroll, max(0, len(entries) - visible_rows)))
+
+        clip_rect = pygame.Rect(x, FB_LIST_TOP, w, FB_LIST_BOTTOM - FB_LIST_TOP)
+        self.screen.set_clip(clip_rect)
+
+        for i, (name, is_dir, size) in enumerate(entries[new_scroll:new_scroll + visible_rows]):
+            real_i = i + new_scroll
+            ry = FB_LIST_TOP + i * FB_ROW_H
+            row_rect = pygame.Rect(x, ry, w, FB_ROW_H)
+
+            # Background
+            if real_i == selected_idx:
+                pygame.draw.rect(self.screen, self.colors["accent"], row_rect)
+            elif row_rect.collidepoint(mx, my):
+                pygame.draw.rect(self.screen, self.colors["border"], row_rect)
+
+            # Icon
+            icon = "/" if is_dir else " "
+            icon_surf = self.font_sm.render(icon, True,
+                                            self.colors["top"] if is_dir else self.colors["text"])
+            self.screen.blit(icon_surf, (x + 4, ry + 5))
+
+            # Name (truncated)
+            max_name_w = w - 60
+            display_name = name
+            name_surf = self.font_sm.render(display_name, True, self.colors["text"])
+            while name_surf.get_width() > max_name_w and len(display_name) > 4:
+                display_name = display_name[:-2]
+                name_surf = self.font_sm.render(display_name + "~", True, self.colors["text"])
+            self.screen.blit(name_surf, (x + 16, ry + 5))
+
+            # Size (right-aligned)
+            if size:
+                size_surf = self.font_sm.render(size, True, (120, 120, 130))
+                self.screen.blit(size_surf, (x + w - size_surf.get_width() - 4, ry + 5))
+
+            # Click detection
+            if m_click and row_rect.collidepoint(mx, my) and not self.m_locked:
+                self.pressed_button = f"fb_{panel_id}_{real_i}"
+            if not m_click and self.pressed_button == f"fb_{panel_id}_{real_i}":
+                if row_rect.collidepoint(mx, my):
+                    clicked_idx = real_i
+                self.pressed_button = None
+
+        self.screen.set_clip(None)
+
+        # Scrollbar
+        total = len(entries)
+        if total > visible_rows:
+            bar_h = max(20, int((visible_rows / total) * (FB_LIST_BOTTOM - FB_LIST_TOP)))
+            bar_y = FB_LIST_TOP + int((new_scroll / max(1, total - visible_rows))
+                                      * (FB_LIST_BOTTOM - FB_LIST_TOP - bar_h))
+            pygame.draw.rect(self.screen, self.colors["border"],
+                             pygame.Rect(x + w - 5, bar_y, 4, bar_h), border_radius=2)
+
+        return new_selected, new_scroll, clicked_idx
+
+    def draw_filebrowser_overlay(self):
+        """Draw the two-panel file browser overlay."""
+        W = CONTROL_PANEL_WIDTH
+        H = CONTROL_PANEL_HEIGHT
+        PAD = FB_PAD
+
+        # Background
+        bg = pygame.Surface((W, H), pygame.SRCALPHA)
+        bg.fill((18, 20, 24, 252))
+        self.screen.blit(bg, (0, 0))
+
+        mx, my = pygame.mouse.get_pos()
+        m_click = pygame.mouse.get_pressed()[0]
+
+        # Title
+        title = self.font_lg.render("File Browser", True, self.colors["text"])
+        self.screen.blit(title, (PAD, 18))
+        pygame.draw.line(self.screen, self.colors["border"], (PAD, 52), (W - PAD, 52))
+
+        # Panel headers
+        dev_hdr = self.font_sm.render("DEVICE", True, self.colors["top"])
+        loc_hdr = self.font_sm.render("LOCAL PC", True, self.colors["bot"])
+        self.screen.blit(dev_hdr, (PAD, 60))
+        self.screen.blit(loc_hdr, (FB_RIGHT_X, 60))
+
+        # Centre divider
+        pygame.draw.line(self.screen, self.colors["border"],
+                         (FB_DIVIDER_X, 55), (FB_DIVIDER_X, FB_LIST_BOTTOM + 5))
+
+        # Draw panels
+        (self.fb_device_selected,
+         self.fb_device_scroll,
+         dev_clicked) = self._fb_draw_panel(
+            PAD, FB_PANEL_W,
+            self.fb_device_path, self.fb_device_entries,
+            self.fb_device_selected, self.fb_device_scroll,
+            self.fb_loading, "dev", mx, my, m_click)
+
+        (self.fb_local_selected,
+         self.fb_local_scroll,
+         loc_clicked) = self._fb_draw_panel(
+            FB_RIGHT_X, W - FB_RIGHT_X - PAD,
+            self.fb_local_path, self.fb_local_entries,
+            self.fb_local_selected, self.fb_local_scroll,
+            False, "loc", mx, my, m_click)
+
+        # Handle clicks → navigate or select
+        if dev_clicked is not None and dev_clicked < len(self.fb_device_entries):
+            name, is_dir, _ = self.fb_device_entries[dev_clicked]
+            self._fb_navigate_device(name, is_dir)
+
+        if loc_clicked is not None and loc_clicked < len(self.fb_local_entries):
+            name, is_dir, _ = self.fb_local_entries[loc_clicked]
+            self._fb_navigate_local(name, is_dir)
+
+        # ── Action buttons ───────────────────────────────────────────────
+        btn_y  = FB_BTN_Y
+        bw_sm  = 80
+        bw_mid = 110
+
+        def _draw_btn(rect, label, color, text_col=None):
+            tc = text_col or WHITE_TEXT
+            is_hov = rect.collidepoint(mx, my)
+            col = tuple(min(c + 25, 255) for c in color) if is_hov else color
+            pygame.draw.rect(self.screen, col, rect, border_radius=BUTTON_BORDER_RADIUS)
+            surf = self.font_sm.render(label, True, tc)
+            self.screen.blit(surf, surf.get_rect(center=rect.center))
+            return is_hov
+
+        # Device: ← Back
+        back_dev_rect = pygame.Rect(PAD, btn_y, bw_sm, FB_BTN_H)
+        _draw_btn(back_dev_rect, "← Back", self.colors["panel"])
+        if m_click and back_dev_rect.collidepoint(mx, my) and not self.m_locked:
+            self.pressed_button = "fb_back_dev"
+        if not m_click and self.pressed_button == "fb_back_dev":
+            if back_dev_rect.collidepoint(mx, my):
+                self._fb_back_device()
+            self.pressed_button = None
+
+        # Device → Local: ↓ Download
+        has_dev_sel = self.fb_device_selected is not None and not self.fb_transfer_busy
+        dl_color = self.colors["success"] if has_dev_sel else (50, 60, 50)
+        dl_rect = pygame.Rect(PAD + bw_sm + 5, btn_y, bw_mid, FB_BTN_H)
+        _draw_btn(dl_rect, "↓ To Local" if not self.fb_transfer_busy else "...",
+                  dl_color)
+        if has_dev_sel and m_click and dl_rect.collidepoint(mx, my) and not self.m_locked:
+            self.pressed_button = "fb_pull"
+        if not m_click and self.pressed_button == "fb_pull":
+            if dl_rect.collidepoint(mx, my) and has_dev_sel:
+                self._fb_pull()
+            self.pressed_button = None
+
+        # Local: ← Back
+        back_loc_rect = pygame.Rect(FB_RIGHT_X, btn_y, bw_sm, FB_BTN_H)
+        _draw_btn(back_loc_rect, "← Back", self.colors["panel"])
+        if m_click and back_loc_rect.collidepoint(mx, my) and not self.m_locked:
+            self.pressed_button = "fb_back_loc"
+        if not m_click and self.pressed_button == "fb_back_loc":
+            if back_loc_rect.collidepoint(mx, my):
+                self._fb_back_local()
+            self.pressed_button = None
+
+        # Local → Device: ↑ Upload
+        has_loc_sel = self.fb_local_selected is not None and not self.fb_transfer_busy
+        ul_color = self.colors["accent"] if has_loc_sel else (40, 50, 70)
+        ul_rect = pygame.Rect(FB_RIGHT_X + bw_sm + 5, btn_y,
+                              W - FB_RIGHT_X - bw_sm - 5 - PAD, FB_BTN_H)
+        _draw_btn(ul_rect, "↑ To Device" if not self.fb_transfer_busy else "...",
+                  ul_color)
+        if has_loc_sel and m_click and ul_rect.collidepoint(mx, my) and not self.m_locked:
+            self.pressed_button = "fb_push"
+        if not m_click and self.pressed_button == "fb_push":
+            if ul_rect.collidepoint(mx, my) and has_loc_sel:
+                self._fb_push()
+            self.pressed_button = None
+
+        # ── Status bar ───────────────────────────────────────────────────
+        pygame.draw.line(self.screen, self.colors["border"],
+                         (PAD, FB_STATUS_Y - 4), (W - PAD, FB_STATUS_Y - 4))
+        if self.fb_status:
+            col = self.fb_status_color or self.colors["text"]
+            st_surf = self.font_sm.render(self.fb_status[:60], True, col)
+            self.screen.blit(st_surf, st_surf.get_rect(center=(W // 2, FB_STATUS_Y + 8)))
+
+        # ── Hint line ────────────────────────────────────────────────────
+        hint = self.font_sm.render("Click folder to open  |  Click file to select", True, (80, 85, 100))
+        self.screen.blit(hint, hint.get_rect(center=(W // 2, FB_STATUS_Y + 30)))
+
+        # ── Close button ─────────────────────────────────────────────────
+        pygame.draw.line(self.screen, self.colors["border"],
+                         (PAD, FB_CLOSE_Y - 8), (W - PAD, FB_CLOSE_Y - 8))
+        close_rect = pygame.Rect(W - PAD - 110, FB_CLOSE_Y, 110, 38)
+        _draw_btn(close_rect, "Close", self.colors["panel"])
+        if m_click and close_rect.collidepoint(mx, my) and not self.m_locked:
+            self.pressed_button = "fb_close"
+        if not m_click and self.pressed_button == "fb_close":
+            if close_rect.collidepoint(mx, my):
+                self.show_filebrowser = False
+            self.pressed_button = None
+
+        # Reset lock
+        if not m_click:
+            self.m_locked = False
+
+    # ── End File Browser ─────────────────────────────────────────────────
+
     def render(self):
         """
         Main render loop for the UI
@@ -1244,6 +1636,11 @@ class PygameUI:
 
             if self.show_wireless:
                 self.draw_wireless_overlay()
+                pygame.display.flip()
+                return
+
+            if self.show_filebrowser:
+                self.draw_filebrowser_overlay()
                 pygame.display.flip()
                 return
 
@@ -1688,6 +2085,34 @@ class PygameUI:
                         self.show_status("Please enter IP:Port", "warning", 2.0)
                 self.pressed_button = None
             
+            # Files Button
+            files_btn = pygame.Rect(FILES_BUTTON_X, FILES_BUTTON_Y,
+                                    FILES_BUTTON_WIDTH, FILES_BUTTON_HEIGHT)
+            fb_hover = files_btn.collidepoint(mx, my)
+            fb_has_device = bool(self.l.scrcpy.serial and self.l.scrcpy.adb_bin)
+            if not fb_has_device:
+                fb_color    = (45, 48, 56)
+                fb_text_col = (100, 105, 115)
+                fb_label    = "FILES (no device)"
+            elif fb_hover:
+                fb_color    = self.colors["accent"]
+                fb_text_col = WHITE_TEXT
+                fb_label    = "FILE BROWSER"
+            else:
+                fb_color    = self.colors["panel"]
+                fb_text_col = self.colors["text"]
+                fb_label    = "FILE BROWSER"
+            pygame.draw.rect(self.screen, fb_color, files_btn, border_radius=5)
+            fb_txt = self.font_md.render(fb_label, True, fb_text_col)
+            self.screen.blit(fb_txt, fb_txt.get_rect(center=files_btn.center))
+
+            if fb_has_device and m_click and fb_hover and not self.m_locked and not self.dragging:
+                self.pressed_button = "filebrowser"
+            if not m_click and self.pressed_button == "filebrowser":
+                if fb_hover and fb_has_device:
+                    self._fb_open()
+                self.pressed_button = None
+
             # Status Messages
             if time.time() - self.status_time < self.status_duration:
                 color_map = {
@@ -1910,6 +2335,27 @@ class PygameUI:
         Args:
             event: Pygame event object
         """
+        # File browser: Escape to close, mouse wheel to scroll panels
+        if self.show_filebrowser:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.show_filebrowser = False
+            elif event.type == pygame.MOUSEWHEEL:
+                mx, my = pygame.mouse.get_pos()
+                visible_rows = (FB_LIST_BOTTOM - FB_LIST_TOP) // FB_ROW_H
+                if mx < FB_DIVIDER_X:
+                    # Left (device) panel
+                    self.fb_device_scroll = max(
+                        0, min(self.fb_device_scroll - event.y,
+                               max(0, len(self.fb_device_entries) - visible_rows))
+                    )
+                else:
+                    # Right (local) panel
+                    self.fb_local_scroll = max(
+                        0, min(self.fb_local_scroll - event.y,
+                               max(0, len(self.fb_local_entries) - visible_rows))
+                    )
+            return
+
         # If settings are open, block most main UI events
         if self.show_settings:
             return
