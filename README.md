@@ -22,7 +22,7 @@ On **Wayland** it runs in floating mode via XWayland.
 
 **For the Windows version, see the upstream project: https://github.com/theswest/DualCPY**
 
-Please report Linux-specific issues at https://github.com/DrSkyfaR/ThorCPY-Linux/issues
+Please report Linux-specific issues at https://github.com/DrSkyfaR/DualCPY-Linux/issues
 
 <h2 align="center">Screenshots</h2>
 
@@ -117,8 +117,8 @@ sudo apt install git adb scrcpy python3-dev python3-xlib python3-venv build-esse
 
 ### Option 1: Run from Source (recommended)
 ```bash
-git clone https://github.com/DrSkyfaR/ThorCPY-Linux.git
-cd ThorCPY-Linux
+git clone https://github.com/DrSkyfaR/DualCPY-Linux.git
+cd DualCPY-Linux
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -287,7 +287,7 @@ and that `adb` can see your device.
 ## Contributing
 
 - For **Linux-specific** bugs or features: open an issue in **this repository** on
-  [GitHub](https://github.com/DrSkyfaR/ThorCPY-Linux/issues).
+  [GitHub](https://github.com/DrSkyfaR/DualCPY-Linux/issues).
 - For general **DualCPY** issues (Windows / upstream): see the
   [upstream repository](https://github.com/theswest/DualCPY/issues).
 
