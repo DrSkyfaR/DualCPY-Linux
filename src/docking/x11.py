@@ -48,6 +48,19 @@ class X11DockManager(DockManager):
             logger.error(f"Failed to create container window: {e}")
             return None
 
+    def get_container_geometry(self):
+        """Return the container's (x, y, w, h) in absolute root coordinates."""
+        try:
+            if not self.hwnd_container:
+                return None
+            win = self.disp.create_resource_object('window', self.hwnd_container)
+            geom = win.get_geometry()
+            abs_pos = self.root.translate_coords(win, 0, 0)
+            return (abs_pos.x, abs_pos.y, geom.width, geom.height)
+        except Exception as e:
+            logger.debug(f"get_container_geometry failed: {e}")
+            return None
+
     def process_events(self):
         """Consume X11 events to keep the container responsive"""
         try:

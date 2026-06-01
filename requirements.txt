@@ -1,4 +1,7 @@
-pygame>=2.6.0
+customtkinter>=5.2.2
+darkdetect>=0.8.0
+pillow>=10.0.0
+mss>=9.0.0
 pyinstaller>=6.0.0
 pywin32-ctypes>=0.2.0; sys_platform == 'win32'
 python-xlib>=0.33; sys_platform == 'linux'

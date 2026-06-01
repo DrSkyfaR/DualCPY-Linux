@@ -22,13 +22,13 @@ def check_imports():
         return False
 
     try:
-        import src.ui_pygame
-        logger.info("src.ui_pygame imported successfully")
+        import src.control_panel
+        logger.info("src.control_panel imported successfully")
     except ImportError as e:
-        logger.error(f"Failed to import src.ui_pygame: {e}")
+        logger.error(f"Failed to import src.control_panel: {e}")
         return False
     except Exception as e:
-        logger.error(f"Error importing src.ui_pygame: {e}")
+        logger.error(f"Error importing src.control_panel: {e}")
         return False
 
     try:

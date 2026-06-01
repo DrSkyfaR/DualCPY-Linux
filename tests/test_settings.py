@@ -20,16 +20,18 @@ class MockUI:
     def handle_event(self, event):
         pass
 
-# Patch standard PygameUI with MockUI
-src.launcher.PygameUI = MockUI
+# The control panel UI is created lazily inside launch(); these tests never call
+# launch(), so no UI patch is required.
 
 import src.scrcpy_manager
 class MockScrcpy:
-    def __init__(self, scale=1.0):
+    def __init__(self, scale=1.0, **kwargs):
         self.f_w1 = 100
         self.f_h1 = 100
         self.f_w2 = 100
         self.f_h2 = 100
+        self.serial = None
+        self.max_fps = 120
     def detect_device(self):
         return "mock_serial"
     def start_scrcpy(self, serial, swap_screens=False):

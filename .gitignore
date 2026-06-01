@@ -48,3 +48,10 @@ bin/*.vbs
 *.tmp
 *.bak
 ~*
+
+# Local screenshots / scratch images
+images/
+screenshots/
+
+# Reference source from upstream Windows dev (not part of this repo)
+DualCPY-source-for-chris/

@@ -84,3 +84,10 @@ class DockManager(ABC):
         Default no-op — override on platforms that support it.
         """
         pass
+
+    def get_container_geometry(self):
+        """
+        Return the container's (x, y, w, h) in absolute screen coordinates,
+        or None if unavailable. Default None — override where supported.
+        """
+        return None

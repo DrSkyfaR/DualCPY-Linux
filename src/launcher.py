@@ -13,15 +13,14 @@ except:
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-try:
-    import pygame
-except ImportError:
-    pass # Managed in UI
-
-from src.scrcpy_manager import ScrcpyManager, TOP_SCREEN_WINDOW_TITLE, BOTTOM_SCREEN_WINDOW_TITLE
+from src.scrcpy_manager import (
+    ScrcpyManager, TOP_SCREEN_WINDOW_TITLE, BOTTOM_SCREEN_WINDOW_TITLE, DEFAULT_MAX_FPS,
+)
 from src.presets import PresetStore
 from src.config import ConfigManager
-from src.ui_pygame import show_loading_screen
+from src.custom_profile_store import CustomProfileStore
+from src.device_profile import BUILTIN_PROFILES
+from src.device_selector import show_device_selector
 
 # Platform specific imports
 if sys.platform == "win32":
@@ -62,6 +61,9 @@ DEFAULT_CONTAINER_Y = 100
 SCRCPY_POLL_INTERVAL = 0.1
 DOCKING_MONITOR_TIME_DELAY = 1.0 # Increased for Linux
 UI_FPS = 60
+
+# Selectable FPS caps offered in the control panel
+ALLOWED_FPS_VALUES = (30, 60, 90, 120)
 
 # Math constants
 HALF = 0.5
@@ -104,6 +106,7 @@ class Launcher:
         # Load config managers
         self.store = PresetStore("config/layout.json")
         self.config = ConfigManager("config/config.json")
+        self.custom_profiles = CustomProfileStore("config/custom_profiles.json")
 
         # Load scale or use the default
         self.global_scale = self.config.get(
@@ -122,9 +125,14 @@ class Launcher:
         # Load Discord audio routing preference (Linux only — harmless to store on any OS)
         discord_audio_routing = self.config.get("discord_audio_routing", True)
 
+        # Load FPS cap preference (applies to the top window; bottom is capped to <=60)
+        self.max_fps = int(self.config.get("max_fps", DEFAULT_MAX_FPS))
+        logger.info(f"Max FPS: {self.max_fps}")
+
         # Initialize Scrcpy with the saved scale
         self.scrcpy = ScrcpyManager(scale=self.launch_scale,
-                                    discord_audio_routing=discord_audio_routing)
+                                    discord_audio_routing=discord_audio_routing,
+                                    max_fps=self.max_fps)
 
         # Calculate the forced layout (Top at 0,0 - bottom centred underneath) with scaled dimensions
         w1, h1 = self.scrcpy.f_w1, self.scrcpy.f_h1
@@ -409,42 +417,83 @@ class Launcher:
                 self._bottom_docked = True
                 logger.info("Windows docked successfully")
 
+    def _resolve_profile_for(self, serial):
+        """Pick the DeviceProfile for a serial: remembered → auto-match/selector
+        → AYN Thor fallback. Returns a DeviceProfile (never None)."""
+        # 1. Previously remembered choice for this device
+        remembered = self.config.get("device_profiles", {}).get(serial)
+        if remembered:
+            prof = self.custom_profiles.load_all().get(remembered) or BUILTIN_PROFILES.get(remembered)
+            if prof:
+                logger.info(f"Using remembered profile '{remembered}' for {serial}")
+                return prof
+
+        # 2. Auto-match against built-in/custom profiles (may prompt to create one
+        #    for a genuinely unknown device with >=2 displays)
+        try:
+            prof = show_device_selector(
+                adb_bin=self.scrcpy.adb_bin, serial=serial,
+                custom_store=self.custom_profiles, parent_window=None,
+            )
+            if prof:
+                return prof
+        except Exception as e:
+            logger.error(f"Device selector failed: {e}", exc_info=True)
+
+        # 3. Fallback so the app always works on the primary target device
+        logger.info("Falling back to built-in AYN Thor profile")
+        return BUILTIN_PROFILES["ayn_thor"]
+
+    def _apply_profile(self, profile):
+        """Rebuild the scrcpy manager for a chosen profile (keeps scale/fps)."""
+        self.scrcpy = ScrcpyManager(
+            scale=self.launch_scale,
+            discord_audio_routing=self.config.get("discord_audio_routing", True),
+            max_fps=self.max_fps,
+            profile=profile,
+        )
+        logger.info(f"Active device profile: {profile.name}")
+
     def launch(self):
         """
-        Main application entry point.
+        Main application entry point (customtkinter UI).
         """
         self.running = True
-        
-        # Show loading screen (Windows only - Linux/Pygame has issues with thread/display init here)
-        if sys.platform == "win32":
-            try:
-                show_loading_screen()
-            except Exception as e:
-                logger.error(f"Failed to show loading screen: {e}")
+
+        # NOTE: no standalone splash screen — customtkinter keeps global DPI/scaling
+        # timers bound to the first CTk() root, and destroying a splash root before
+        # creating the control-panel root leaves those timers firing on a dead
+        # interpreter ("invalid command name"). The single control-panel root below
+        # is the only CTk() we create.
 
         # Check for ADB/Scrcpy and install if missing
         if not self.scrcpy.adb_bin or not self.scrcpy.scrcpy_bin:
             logger.info("Dependencies (adb or scrcpy) not found. Attempting to install...")
-            # On Linux, try to install
             if sys.platform == "linux":
                 if self.scrcpy.install_adb():
-                    # Re-resolve binaries
                     self.scrcpy.adb_bin = self.scrcpy._resolve_bin("adb")
                     self.scrcpy.scrcpy_bin = self.scrcpy._resolve_bin("scrcpy")
-            
             if not self.scrcpy.adb_bin or not self.scrcpy.scrcpy_bin:
-                 logger.error("Required binaries not found and automatic installation failed/not supported.")
+                logger.error("Required binaries not found and automatic installation failed/not supported.")
 
         # Try to detect device, but don't require it
         serial = self.scrcpy.detect_device()
-        
+
         if serial:
-            # Device found, start scrcpy automatically
+            # Resolve the device profile (remembered / matched / fallback) and
+            # rebuild the scrcpy manager so geometry matches the device.
+            profile = self._resolve_profile_for(serial)
+            self._apply_profile(profile)
+            self.scrcpy.serial = serial
+            # Recompute the centred default layout for the (possibly new) geometry.
+            self.tx, self.ty = TOP_SCREEN_DEFAULT_X, TOP_SCREEN_DEFAULT_Y
+            self.by = int(self.scrcpy.f_h1)
+            self.bx = int(self.scrcpy.f_w1 * HALF - self.scrcpy.f_w2 * HALF)
+
             try:
                 self.scrcpy.start_scrcpy(serial, swap_screens=self.swap_screens)
                 logger.info(f"Started scrcpy with device: {serial}")
-                
-                # Create container and start docking monitor
+
                 self._create_container_window()
                 self._dock_monitor_stop.set()
                 time.sleep(0.1)
@@ -452,78 +501,26 @@ class Launcher:
                 threading.Thread(target=self._docking_monitor, daemon=True).start()
             except Exception as StartError:
                 logger.error(f"Failed to start scrcpy: {StartError}")
-                # Continue without scrcpy - user can connect via menu
         else:
-            logger.info("No device detected at startup. User can connect via menu.")
-            print("\n[INFO] No device detected. Use the CONNECT button in the UI to connect wirelessly.\n")
-            # Don't create container yet - will be created when device connects
+            logger.info("No device detected at startup. User can connect via the Wireless dialog.")
+            print("\n[INFO] No device detected. Use the Wireless button in the UI to connect.\n")
 
-        # Init UI and event loop (always start UI)
-        from src.ui_pygame import PygameUI
-
+        # Init the customtkinter control panel and run its event loop.
         try:
-            pygame.init()
-            self.ui = PygameUI(self)
+            from src.control_panel import CTkUI
+            self.ui = CTkUI(self)
+            self._tk_root = self.ui.window
         except Exception as e:
-            logger.error(f"Failed to init Pygame UI: {e}")
+            logger.error(f"Failed to init control panel UI: {e}", exc_info=True)
             self.stop()
             return
-            
-        clock = pygame.time.Clock()
 
         try:
-            while self.running:
-                # Check for shutdown request from signal handler
-                if main_module and hasattr(main_module, '_shutdown_requested') and main_module._shutdown_requested:
-                    logger.info("Shutdown requested via signal")
-                    print("\n[INFO] Shutting down ThorCPY...")
-                    self.stop()
-                    break
-                
-                # Check for pending wireless connection
-                self.check_pending_connection()
-                
-                # Check scan status
-                self.check_scan_status()
-                
-                # Handle pygame events
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        self.stop()
-                    self.ui.handle_event(event)
-
-                # Process platform specific events (X11 etc)
-                self.dock.process_events()
-
-                # Sync window positions only while docked.
-                # When undocked the WM manages window positions freely —
-                # calling configure() every frame would prevent the user
-                # from moving the floating windows.
-                # In single-window modes the visible window sits at (0,0)
-                # inside the container so the DUAL offsets are not used.
-                if self.docked and (self.dock.hwnd_top or self.dock.hwnd_bottom):
-                    if self.layout_mode == LayoutMode.TOP:
-                        _sp = (0, 0, 0, 0,
-                               self.scrcpy.f_w1, self.scrcpy.f_h1,
-                               self.scrcpy.f_w1, self.scrcpy.f_h1)
-                    elif self.layout_mode == LayoutMode.BOTTOM:
-                        _sp = (0, 0, 0, 0,
-                               self.scrcpy.f_w2, self.scrcpy.f_h2,
-                               self.scrcpy.f_w2, self.scrcpy.f_h2)
-                    else:
-                        _sp = (self.tx, self.ty, self.bx, self.by,
-                               self.scrcpy.f_w1, self.scrcpy.f_h1,
-                               self.scrcpy.f_w2, self.scrcpy.f_h2)
-                    if _sp != self._last_sync_params:
-                        self.dock.sync_layout(*_sp, is_docked=True)
-                        self._last_sync_params = _sp
-                
-                self.ui.render()
-                clock.tick(UI_FPS)
-                    
+            self.ui.run()   # CTk mainloop; per-frame work runs via tick()
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received in main loop")
             print("\n[INFO] Shutting down ThorCPY...")
+        finally:
             self.stop()
 
     def save_swap_screens(self, value):
@@ -533,6 +530,95 @@ class Launcher:
         self.swap_screens = value
         self.config.set("swap_screens", self.swap_screens)
         logger.info(f"Saved swap_screens preference: {self.swap_screens}")
+
+    def save_max_fps(self, value):
+        """
+        Saves the FPS cap preference and applies it to the scrcpy manager.
+        Takes effect on the next scrcpy (re)start.
+        """
+        self.max_fps = int(value)
+        self.config.set("max_fps", self.max_fps)
+        if self.scrcpy:
+            self.scrcpy.max_fps = self.max_fps
+        logger.info(f"Saved max_fps preference: {self.max_fps}")
+
+    # ── Adapter methods consumed by the customtkinter control panel ──────────
+    def set_max_fps(self, value):
+        """Alias used by the CTk UI; persists + applies the FPS cap."""
+        self.save_max_fps(value)
+
+    def restart_app(self):
+        """Restart the scrcpy windows to apply scale/FPS changes."""
+        self.restart_scrcpy()
+
+    def get_default_layout(self):
+        """Return the centred default tx/ty/bx/by for the current profile/scale."""
+        w1, h1 = self.scrcpy.f_w1, self.scrcpy.f_h1
+        w2 = self.scrcpy.f_w2
+        return {
+            "tx": TOP_SCREEN_DEFAULT_X,
+            "ty": TOP_SCREEN_DEFAULT_Y,
+            "by": int(h1),
+            "bx": int(w1 * HALF - w2 * HALF),
+        }
+
+    def _sync_now(self):
+        """Reposition docked scrcpy windows if the layout params changed."""
+        if not (self.docked and (self.dock.hwnd_top or self.dock.hwnd_bottom)):
+            return
+        if self.layout_mode == LayoutMode.TOP:
+            sp = (0, 0, 0, 0,
+                  self.scrcpy.f_w1, self.scrcpy.f_h1,
+                  self.scrcpy.f_w1, self.scrcpy.f_h1)
+        elif self.layout_mode == LayoutMode.BOTTOM:
+            sp = (0, 0, 0, 0,
+                  self.scrcpy.f_w2, self.scrcpy.f_h2,
+                  self.scrcpy.f_w2, self.scrcpy.f_h2)
+        else:
+            sp = (self.tx, self.ty, self.bx, self.by,
+                  self.scrcpy.f_w1, self.scrcpy.f_h1,
+                  self.scrcpy.f_w2, self.scrcpy.f_h2)
+        if sp != self._last_sync_params:
+            self.dock.sync_layout(*sp, is_docked=True)
+            self._last_sync_params = sp
+
+    def force_sync(self):
+        """Force an immediate reposition (used after layout/preset changes)."""
+        self._last_sync_params = None
+        self._sync_now()
+
+    def get_capture_region(self):
+        """Absolute (x, y, w, h) of the docked container for screenshots, or None."""
+        if not self.docked:
+            return None
+        return self.dock.get_container_geometry()
+
+    def tick(self):
+        """Per-frame backend work, driven by the CTk UI's after() timer."""
+        if main_module and getattr(main_module, "_shutdown_requested", False):
+            logger.info("Shutdown requested via signal")
+            self.stop()
+            return
+        self.check_pending_connection()
+        self.check_scan_status()
+        self.dock.process_events()
+        self._sync_now()
+
+    def show_connection_dialog(self):
+        """Open the customtkinter wireless dialog. Returns 'connected',
+        'disconnected' or None."""
+        try:
+            from src.wireless_dialog import show_wireless_dialog
+        except Exception as e:
+            logger.error(f"Wireless dialog unavailable: {e}")
+            return None
+        parent = getattr(self, "_tk_root", None)
+        result = show_wireless_dialog(parent, self.scrcpy, config=self.config)
+        # On a fresh connection, hand the serial to check_pending_connection so
+        # scrcpy starts + docks on the next UI tick.
+        if result == "connected" and self.scrcpy.serial:
+            self._dialog_connect_ip = self.scrcpy.serial
+        return result
 
     def show_wireless_connection_dialog(self):
         """Open the pygame wireless overlay (no subprocess needed)."""
@@ -832,12 +918,15 @@ class Launcher:
         if hasattr(self, 'scrcpy'):
             self.scrcpy.stop() # This uses pkill/terminate now hopefully
 
-        # Shutdown Pygame UI
+        # Tear down the customtkinter UI (ends the mainloop)
         try:
-            pygame.quit()
-        except:
+            root = getattr(self, "_tk_root", None)
+            if root is not None:
+                root.quit()
+                root.destroy()
+        except Exception:
             pass
-            
+
         # Exit
         sys.exit(0)
 
