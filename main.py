@@ -17,7 +17,7 @@
 
 # main.py
 
-__version__ = "0.4.0"
+__version__ = "1.0.0"
 __app_name__ = "DualCPY-Linux"
 __author__ = "the_swest"
 __description__ = "AYN Thor screen mirroring and docking tool"

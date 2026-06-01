@@ -1,9 +1,11 @@
 # Changelog
 
-## 0.4.0 - 01-06-2026
-> Note: this project is now **DualCPY-Linux** (the upstream Windows project
-> ThorCPY was renamed to DualCPY). This release brings the Linux fork up to
-> parity with upstream 0.4, adapted throughout for Linux/X11.
+## 1.0.0 - 01-06-2026
+> Note: previously known as **ThorCPY-Linux**. As of v1.0.0 the project supports
+> all dual-screen Android handhelds — not just the AYN Thor — and has been
+> renamed to **DualCPY-Linux**, tracking the upstream Windows project (ThorCPY →
+> DualCPY). This release brings the Linux port to parity with upstream 1.0,
+> adapted throughout for Linux/X11.
 
 ### Added
 - **Complete UI rewrite in customtkinter** — a native dark-themed control panel

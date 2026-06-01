@@ -1,431 +1,311 @@
 <p align="center">
-  <img src="assets/icon.png" alt="DualCPY-Linux Logo" width="250">
+  <img src="assets/icon.png" alt="DualCPY-Linux logo" height="96" align="middle">
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/dualcpy_wordmark.svg" alt="DualCPY-Linux" height="68" align="middle">
 </p>
 
-# DualCPY-Linux
+> [!NOTE]
+> **DualCPY-Linux** is the Linux port of [DualCPY](https://github.com/theswest/DualCPY)
+> (previously **ThorCPY**). As of v1.0.0 the project supports all dual-screen Android
+> handhelds — not just the AYN Thor — and has been renamed to **DualCPY**.
 
-> **This is a Linux fork of [DualCPY](https://github.com/theswest/ThorCPY) (formerly ThorCPY) by [the_swest](https://github.com/theswest).
-> All credit for the original project goes to [theswest](https://github.com/theswest).
-> For the Windows version, see the [upstream repository](https://github.com/theswest/ThorCPY).**
+DualCPY-Linux *(pronounced "Dual Copy")* is a Linux multi-window scrcpy launcher,
+designed specifically for dual-screen Android handhelds.
+It features a layout editor, window docking, screenshots, file transfer, device
+profiles, and real-time window positioning.
 
-**DualCPY-Linux** is a Linux-optimised fork of [DualCPY](https://github.com/theswest/ThorCPY) (formerly ThorCPY) — a multi-window Scrcpy launcher for dual-screen Android handhelds such as the **AYN Thor**.
+It launches two scrcpy windows (one per display) and embeds them into a single
+container window on **X11** — ideal for screensharing, recording, or livestreaming.
+On **Wayland** it runs in floating mode via XWayland.
 
-It launches two scrcpy windows (one per display), supports window docking on X11, and provides wireless ADB connection support.
-Designed for screensharing, recording or livestreaming.
+**DualCPY-Linux targets Linux with X11 (recommended) or Wayland (floating mode).**
 
-| Main UI                             | DualCPY-Linux Screenshot                             |
-|-------------------------------------|------------------------------------------------|
-| ![](assets/screenshots/main_ui.png) | ![](assets/screenshots/DualCPY-Linux-Screenshot.png) |
+**For the Windows version, see the upstream project: https://github.com/theswest/DualCPY**
 
----
+Please report Linux-specific issues at https://github.com/DrSkyfaR/ThorCPY-Linux/issues
+
+<h2 align="center">Screenshots</h2>
+
+<table align="center">
+  <tr>
+    <td align="center"><b>Control Panel</b></td>
+    <td align="center"><b>Dual-Screen Capture</b></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/main_ui.png" alt="Control Panel" width="420"></td>
+    <td><img src="assets/screenshots/dualcpy-screenshot.png" alt="Dual-screen capture" width="420"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>File Transfer</b></td>
+    <td align="center"><b>Device Profiles</b></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/file_transfer.png" alt="File transfer" width="420"></td>
+    <td><img src="assets/screenshots/device_profiles.png" alt="Device profiles" width="420"></td>
+  </tr>
+</table>
+
+## What's New in 1.0.0
+
+- Rebranded from ThorCPY-Linux to **DualCPY-Linux**, with a brand-new logo
+- Complete UI rewrite in **customtkinter**, with a cleaner, more modern design language
+  (replaces the previous pygame control panel)
+- **Multi-device support** with automatic device detection and built-in profiles
+  for many handhelds
+- **Profile editor** for custom devices, screen sizes, internal monitors, and
+  per-profile scrcpy commands
+- **File Transfer window** for two-way file management over ADB (@DrSkyfaR & @theswest)
+- **Gamepad passthrough** to the device
+- **FPS selector** and **Restart** button in the control panel (@tommywaaf)
+- Undocked windows keep their window-manager title bars for easy resizing and moving
+- Tuned scrcpy launch for low latency; requires **scrcpy v4.0+**
+
+See the full [CHANGELOG](CHANGELOG.md) for details.
 
 ## Features
 
-- **customtkinter control panel** — native, dark-themed UI with layout sliders,
-  presets, FPS selector and a restart button
-- **Multi-device support** — automatic ADB device detection with built-in
-  profiles (AYN Thor, RG DS, Pocket DS, Odin 3/2/2 Portal/2 Mini + RDS, Retroid
-  Pocket 6/G2/5/4 Pro + RDS). Per-device screen ratios are computed on boot
-- **Custom device profiles** — in-app profile editor, device selector on launch,
-  and a remembered "last used profile" per device
-- **X11 Docking** — embed both scrcpy windows into a single container window
-- **Wayland Support** — floating window mode (docking not possible on pure Wayland)
-- **Wireless ADB Connection** — customtkinter dialog with Quick Connect and
-  Android 11+ pairing, plus a network scanner that auto-discovers devices
-- **File Transfer window** — two-panel device ↔ local PC transfers with file-type
-  icons, quick-nav pills, automatic SD-card detection and inline image previews
-- **Gamepad passthrough** — controller forwarded to the device on the top screen
-- **Layout presets**, **screenshot capture** (`mss` → PNG), real-time **scale
-  control**, **swap screens**, and a **configurable FPS cap**
-- **Tuned scrcpy launch** — low-latency H.264 codec options for smooth, responsive
-  mirroring; vsync disabled to avoid frame drops on high-refresh monitors
+- Multi-device support with built-in profiles for many dual-screen handhelds
+  (AYN Thor, RG DS, Pocket DS, AYN Odin 3 / Odin 2 / 2 Portal / 2 Mini + RDS,
+  Retroid Pocket 6 / G2 / 5 / 4 Pro + RDS, and more), plus custom user-defined profiles
+- Automatic device detection over ADB, with a device selector on launch and smart
+  selection of the connected device
+- "Last used profile" is remembered per-device and auto-booted on launch
+- Both wired (USB) and wireless (ADB over WiFi, Android 11+ pairing) connection,
+  plus a network scanner that auto-discovers devices on your subnet
+- **X11 docking** — embed both screens into one container window, or undock them into
+  independent, resizable, title-barred windows for individual capture (e.g. streaming)
+- **Wayland support** — floating window mode via XWayland (docking not possible on pure Wayland)
+- Layout presets to position the screens precisely how you want
+- Screenshot capture grabs both screens together (saved as a PNG via `mss`)
+- File transfer to and from the device over ADB, with image previews, file metadata,
+  and quick-nav shortcuts on both the local-PC and device sides
+- Profile editor for custom screen sizes, internal-monitor layouts, and per-profile
+  scrcpy launch commands
+- Gamepad passthrough to the device (`--gamepad=uhid` on the top screen)
+- FPS selector and restart controls in the panel
+- Real-time positioning to move the screens into any arrangement
+- **Linux extra:** optional Discord audio routing via PipeWire/PulseAudio so game
+  audio is captured automatically during a screen-share
 
-Technical features:
-- Automatic `adb`/`scrcpy` installation via package manager (pacman / apt)
-- Profile-driven geometry; thread-safe (queue-marshalled) Tk UI updates
-- Graceful error handling and shutdown
-- Comprehensive logging with daily rotation
+## Installation
 
----
+> [!IMPORTANT]
+> **To use DualCPY-Linux, you must have *USB Debugging* enabled.**
+> 1. On the device, go to **Settings > About device**.
+> 2. Tap the **Build number** seven times to unlock **Settings > Developer options**.
+> 3. Enable **USB Debugging** in Developer options.
+>
+> Then connect your device via USB, or just launch DualCPY-Linux to start the
+> wireless connection dialog.
+
+### System dependencies
+
+Install `git`, `adb`, and **scrcpy ≥ 4.0** plus the X11 dev headers from your distro.
+DualCPY-Linux can also attempt to install `adb`/`scrcpy` automatically on first
+launch via `pkexec` (pacman and apt-get supported).
+
+**Arch / Manjaro / CachyOS**
+```bash
+sudo pacman -S git base-devel android-tools scrcpy python-xlib
+```
+
+**Debian / Ubuntu**
+```bash
+sudo apt install git adb scrcpy python3-dev python3-xlib python3-venv build-essential
+```
+> On older Debian, `scrcpy` may be available via backports.
+
+### Option 1: Run from Source (recommended)
+```bash
+git clone https://github.com/DrSkyfaR/ThorCPY-Linux.git
+cd ThorCPY-Linux
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python main.py
+```
+> Re-activate the venv (`source venv/bin/activate`) before running in later sessions.
+
+### Option 2: Build a Standalone Executable
+```bash
+source venv/bin/activate
+pip install pyinstaller
+python build.py
+# Find your build in dist/DualCPY/
+```
+
+**Note:** unlike the Windows build, scrcpy and ADB are **not bundled** on Linux —
+they come from your system (or are auto-installed via `pkexec`).
 
 ## Requirements
 
 ### System
-- **OS**: Linux with X11 (recommended) or Wayland (floating mode via XWayland)
-- **Python**: 3.9+ (tested on 3.14)
-- **Device**: a supported dual-screen Android handheld (e.g. AYN Thor) with USB Debugging enabled
-
-### System Dependencies
-
-Install `git`, `adb`, `scrcpy` (≥ 4.0) and the X11 dev headers from your distro;
-the Python UI packages are installed via `pip` (see **Python Dependencies**).
-
-#### Arch Linux / Manjaro / CachyOS
-
-```bash
-sudo pacman -S git base-devel android-tools scrcpy python-xlib
-```
-
-> `base-devel` (includes `gcc`) is only needed if you intend to build a standalone executable.
-
-#### Debian / Ubuntu
-
-```bash
-sudo apt install git adb python3-dev python3-xlib build-essential
-```
-
-`scrcpy` may not be in the default `stable` repo. Enable backports first:
-
-```bash
-# Enable backports (Debian stable only — skip if already enabled or on Ubuntu)
-echo "deb http://deb.debian.org/debian $(lsb_release -cs)-backports main" \
-  | sudo tee /etc/apt/sources.list.d/backports.list
-sudo apt update
-sudo apt install -t $(lsb_release -cs)-backports scrcpy
-```
-
-> On Ubuntu `scrcpy` is available in the universe repository. Just run:
-> ```bash
-> sudo apt install scrcpy
-> ```
+- **OS:** Linux with X11 (recommended) or Wayland (floating mode via XWayland)
+- **Python:** 3.9 or higher (tested on 3.14)
+- **scrcpy:** v4.0 or higher
+- **Device:** a dual-screen Android handheld with USB Debugging enabled
 
 ### Python Dependencies
-
-#### All distros (venv recommended)
-
-The customtkinter UI needs a few Python packages that are not always available
-in distro repos, so install them into a virtual environment:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-> Always activate the venv (`source venv/bin/activate`) before running
-> `python main.py` or `python build.py` in subsequent sessions.
-
-`requirements.txt` installs:
-- `customtkinter>=5.2.2` — control panel / dialog UI
-- `pillow>=10.0.0` — icons and image previews
-- `mss>=9.0.0` — cross-platform screenshots
-- `darkdetect>=0.8.0` — appearance-mode detection (customtkinter dependency)
-- `python-xlib>=0.33` — X11 window management (Linux only)
-- `pyinstaller>=6.0.0` — only needed to build a standalone executable
-
-> DualCPY-Linux can also attempt to install `adb` and `scrcpy` automatically on first launch
-> if they are missing (via `pkexec`).
-
----
-
-## Enable USB Debugging
-
-Before connecting your AYN Thor:
-
-1. On the device go to **Settings > About device**
-2. Tap **Build number** seven times to enable Developer Options
-3. Go to **Settings > System > Developer Options**
-4. Enable **USB Debugging**
-
----
-
-## Installation
-
-### Option 1: Run from Source (Recommended)
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/DrSkyfaR/ThorCPY-Linux.git
-cd ThorCPY-Linux
-
-# 2. Install system dependencies (see Requirements above)
-```
-
-**Arch Linux** — deps are already installed via `pacman`, run directly:
-
-```bash
-python3 main.py
-```
-
-**Debian / Ubuntu / Other distros** — set up a venv first:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python3 main.py
-```
-
-> On subsequent runs, re-activate the venv before launching:
-> ```bash
-> source .venv/bin/activate && python3 main.py
-> ```
-
-### Option 2: Build a Standalone Executable
-
-```bash
-# Arch — activate a venv that has pyinstaller
-python -m venv .venv && source .venv/bin/activate
-pip install pyinstaller
-
-# Debian/Ubuntu — activate the venv created above
-source .venv/bin/activate
-
-# Run the build script
-python build.py
-
-# Find your binary in dist/DualCPY
-# The executable must be placed in a folder containing: bin/, config/, logs/
-```
-
----
-
-## Connecting Your Device
-
-### Via USB (Automatic)
-Connect your AYN Thor via USB with USB Debugging enabled. DualCPY-Linux detects the device automatically on startup.
-
-### Via WiFi (Wireless ADB)
-
-Click the **CONNECT** button in the control panel to open the wireless connection dialog.
-The button turns **green** when a wireless connection is active.
-
-#### First-time Pairing (Android 11+)
-
-1. On the device: **Developer Options > Wireless debugging > Pair device with pairing code**
-2. Note the IP address, pairing port, and 6-digit code shown
-3. In DualCPY-Linux, click **CONNECT** → switch to the **First Time Pairing** tab
-4. Enter the IP address, pairing port, and 6-digit code, then click **Pair**
-5. After pairing, switch to **Quick Connect**, enter the IP with port `5555`, then click **Connect**
-
-#### Subsequent Connections
-
-1. Enable **Wireless debugging** in Developer Options
-2. Click **CONNECT** in DualCPY-Linux → **Quick Connect** tab
-3. Enter the device IP and port `5555`, click **Connect**
-
-#### Legacy TCP/IP Mode (Android 10 and below)
-
-1. Connect via USB first
-2. Run: `adb tcpip 5555`
-3. Disconnect USB, then use **Quick Connect** in DualCPY-Linux
-
----
+Installed with `pip install -r requirements.txt`:
+- `customtkinter` — control panel / dialog UI
+- `pillow` — icons and image previews
+- `mss` — cross-platform screenshots
+- `darkdetect` — appearance-mode detection
+- `python-xlib` — X11 window management (Linux only)
+- `pyinstaller` — only needed to build a standalone executable
 
 ## Usage
 
-The DualCPY-Linux control panel appears on the right side of your screen:
+### Connection
+- You can connect via USB (charging, offline, more stable) or wirelessly (no tethers).
+- **USB:** ensure USB Debugging is enabled, plug in your device, and launch DualCPY-Linux.
+- **Wireless:**
+  - Launch DualCPY-Linux without a USB device connected and open the **Wireless** dialog.
+  - On the device, enable **Wireless debugging** and open **Pair device with pairing code**.
+  - Enter the IP address, port, and pairing code shown.
+  - Once paired, copy the device's IP and port into the **Connect by IP** field.
+  - Close the dialog — DualCPY-Linux connects and starts mirroring.
 
-| Control | Description |
-|--------|-------------|
-| **Global Scale** | Adjust resolution scale of scrcpy output (requires restart) |
-| **Top X / Top Y** | Move top screen position |
-| **Bottom X / Bottom Y** | Move bottom screen position |
-| **CONNECT** | Open the wireless connection dialog (green when connected wirelessly) |
-| **DOCK WINDOWS** | Embed both windows into a single container (X11 only) |
-| **UNDOCK WINDOWS** | Separate into independent floating windows |
-| **SCREENSHOT** | Capture the docked view to a PNG in `screenshots/` |
-| **SAVE** | Save current layout as a named preset |
-| **LOAD** | Apply a saved preset |
-| **DEL** | Delete a saved preset |
+### Device Selection
+- On launch, DualCPY-Linux detects connected devices over ADB and auto-matches the
+  best profile (with an AYN Thor fallback), remembering the last used profile per device.
+- Don't see your device matched? Use the **Edit Device Profiles** editor to add a custom
+  profile (screen sizes, internal-monitor layout, and per-profile scrcpy launch command).
 
----
+### Main Controls
+The control panel appears on the right-hand side of your screen:
+- **Global Scale** — adjust the scale of the scrcpy outputs (requires restart)
+- **FPS** — select the target framerate (top window; bottom capped to ≤60)
+- **Restart** — restart the mirroring session
+- **Layout:** Top X / Top Y and Bottom X / Bottom Y position each screen
+- **Window controls:**
+  - **Undock** — separate into independent, title-barred floating windows (for individual capture)
+  - **Dock** — bring undocked windows back into one unified container (X11 only)
+  - **Screenshot** — capture the docked view to a PNG in `screenshots/`
+- **File Transfer** — open the file browser to move files between your PC and device
+- **Presets** — name a layout and **Save**; **Load** / **Del** next to a saved preset
+
+### File Transfer
+- Transfer files in both directions (local PC ↔ device) over ADB.
+- Create folders, rename, and delete on either side.
+- Local quick-nav: Home, Desktop, Downloads, Documents, Pictures
+- Device quick-nav: Internal, Download, DCIM, Pictures, Music, Documents
+- Automatic SD-card detection with quick-nav pills
+- Inline image previews with file metadata
 
 ## Configuration
 
-### Layout Presets — `config/layout.json`
-
+### Layouts / Presets — `config/layout.json`
 ```json
 {
-    "Default": {
-        "tx": 0,
-        "ty": 0,
-        "bx": 251,
-        "by": 648,
-        "global_scale": 0.6
-    },
-    "Streaming": {
-        "tx": 100,
-        "ty": 50,
-        "bx": 300,
-        "by": 700,
-        "global_scale": 0.3
-    }
+    "Default":   { "tx": 0,   "ty": 0,  "bx": 251, "by": 648, "global_scale": 0.6 },
+    "Streaming": { "tx": 100, "ty": 50, "bx": 300, "by": 700, "global_scale": 0.3 }
 }
 ```
 
 ### General Config — `config/config.json`
-
 ```json
 {
-    "global_scale": 0.6,
-    "tx": 0,
-    "ty": 0,
-    "bx": 251,
-    "by": 648,
-    "layout_mode": "DUAL",
-    "swap_screens": false,
-    "wireless_connect_ip": "192.168.1.100",
-    "wireless_connect_port": "5555"
+    "tx": 0, "ty": 0, "bx": 250, "by": 648, "global_scale": 0.6,
+    "max_fps": 120,
+    "device_profiles": { "78ab8b8f": "ayn_thor" },
+    "last_profile": "AYN Thor",
+    "discord_audio_routing": true
 }
 ```
 
-### Logging
+### Custom Profiles — `config/custom_profiles.json`
+User-defined device profiles created in the profile editor are stored here.
 
-Logs are saved to `logs/` with daily rotation:
+### Logging — `logs/`
+- `dualcpy_YYYYMMDD.log` — main application log
+- `scrcpy_top_YYYYMMDD_HHMMSS.log` / `scrcpy_bottom_YYYYMMDD_HHMMSS.log` — per-window scrcpy output
 
-| File | Content |
-|------|---------|
-| `thorcpy_YYYYMMDD.log` | Main application log |
-| `scrcpy_top_YYYYMMDD_HHMMSS.log` | Top window scrcpy output |
-| `scrcpy_bottom_YYYYMMDD_HHMMSS.log` | Bottom window scrcpy output |
-
-To increase verbosity, change `logging.INFO` to `logging.DEBUG` in `main.py`.
-
----
+To adjust verbosity, change the logging level in `main.py`:
+```python
+logging.basicConfig(
+    level=logging.INFO,  # Change to DEBUG for detailed logs
+    ...
+)
+```
 
 ## Troubleshooting
 
-### Device Not Found
-- Ensure USB Debugging is enabled
-- Try a different USB cable (data cable, not charge-only)
-- Revoke USB debugging authorizations and reconnect:
-  **Settings > System > Developer Options > Revoke USB debugging authorizations**
-- Check if ADB sees the device: `adb devices`
-- Restart ADB server: `adb kill-server && adb start-server`
+### Layout issues
+- Load a preset at 0.6 global scale and save it.
+- Delete `config/layout.json` and `config/config.json` so they are regenerated.
 
-### Scrcpy Not Starting
-- Confirm scrcpy is installed: `which scrcpy`
-- Try running manually: `scrcpy -s YOUR_DEVICE_SERIAL --display-id=0`
-- Check logs in `logs/` for error details
-- Ensure your device has display IDs `0` and `4`
+### Device not found
+- Ensure USB debugging is enabled — try a different (data, not charging-only) cable.
+- Revoke USB-debugging authorizations and reconnect (Developer Options).
+- Check that ADB sees your device: `adb devices`
+- Restart the ADB server: `adb kill-server && adb start-server`
 
-### Windows Won't Dock (X11)
-- Confirm you are running under **X11**, not Wayland: `echo $XDG_SESSION_TYPE`
-- Wait a few seconds for scrcpy to fully initialise
-- Toggle Dock / Undock several times
-- Restart DualCPY-Linux
+### scrcpy won't start
+- Ensure `scrcpy` (≥ 4.0) is installed and on your `PATH`.
+- Check the per-window logs in `logs/` for the exact error.
+- Try running scrcpy manually: `scrcpy -s YOUR_DEVICE_SERIAL`
+- Ensure your device exposes the display IDs expected by your profile.
+
+### Windows won't dock (X11)
+- Wait a few seconds for the windows to initialise, then toggle dock/undock.
+- Make sure you are on an **X11** session (`echo $XDG_SESSION_TYPE`).
+- Restart the application and check the logs.
 
 ### Running on Wayland
-- Docking is **not supported** on Wayland (no window reparenting)
-- Windows will open as independent floating windows — this is expected behaviour
-- To use X11, start your session with an X11 display server or use `XWayland`
+- Docking requires X11. With XWayland present, DualCPY-Linux forces the X11 backend
+  automatically; on **pure Wayland** only floating mode is available.
 
-### Wireless Connection Fails
-- Ensure both PC and device are on the same WiFi network
-- Disable any firewall rules blocking port 5555
-- For Android 11+, use the **First Time Pairing** flow before attempting Quick Connect
-- Check that **Wireless debugging** is enabled on the device (not just USB debugging)
+### Performance / stuttering
+- Reduce the global scale or lower the FPS in the control panel.
+- Close other resource-intensive applications; prefer a USB 3 port.
+- Increase the per-profile **screen-launch delay** for lower-powered devices.
 
-### Performance / Stuttering
-- Over WiFi: DualCPY-Linux automatically uses 120 FPS (top) / 60 FPS (bottom)
-- Reduce **Global Scale** in the UI to lower resolution and bandwidth
-- Use a USB 3.0 port when connecting via cable for best performance
-- Close other resource-intensive applications
-- To manually adjust FPS limits, edit `DEFAULT_MAX_FPS` in `src/scrcpy_manager.py`
+### Gamepad not detected
+- You may need to reconnect your controller while DualCPY-Linux is running — this is
+  an Android limitation with `--gamepad=uhid`.
 
-### Layout Issues
-- Delete `config/layout.json` and `config/config.json` to reset to defaults
-- Reload at 0.6 scale, adjust, and save
+### Missing module / import errors
+- Activate the venv and reinstall: `pip install -r requirements.txt --force-reinstall`
+- Ensure Python 3.9+ and the `python-xlib` system package are installed.
 
-### Running in a Distrobox Container (Bazzite / Immutable Systems)
-
-DualCPY-Linux can run inside a [Distrobox](https://distrobox.it/) container on immutable systems like Bazzite.
-
-**Arch container** (`ghcr.io/ublue-os/bazzite-arch`):
-```bash
-sudo pacman -S git base-devel android-tools scrcpy python-xlib
-git clone https://github.com/DrSkyfaR/ThorCPY-Linux.git && cd ThorCPY-Linux
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-python main.py
-```
-
-**Debian container** (`docker.io/library/debian:stable-slim` or similar):
-```bash
-sudo apt update
-sudo apt install git curl lsb-release python3 python3-venv python3-dev \
-     python3-xlib build-essential android-tools-adb
-# Enable backports for scrcpy
-echo "deb http://deb.debian.org/debian $(lsb_release -cs)-backports main" \
-  | sudo tee /etc/apt/sources.list.d/backports.list
-sudo apt update && sudo apt install -t $(lsb_release -cs)-backports scrcpy
-git clone https://github.com/DrSkyfaR/ThorCPY-Linux.git && cd ThorCPY-Linux
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python3 main.py
-```
-
-> Make sure the container has access to the host display (`DISPLAY`/`WAYLAND_DISPLAY`)
-> and that `adb` on the host (or inside the container) can see your USB device.
-
----
-
-## Project Structure
-
-```
-DualCPY-Linux/
-├── main.py                     # Entry point
-├── build.py                    # PyInstaller build script
-├── requirements.txt            # Python dependencies
-├── assets/                     # Logo, fonts, file-browser icons, screenshots
-├── bin/                        # Local adb/scrcpy binaries (optional)
-├── config/                     # Runtime configuration (auto-created)
-├── logs/                       # Log files (auto-created)
-└── src/
-    ├── launcher.py             # Main controller: docking, layout, wireless, tick loop
-    ├── scrcpy_manager.py       # scrcpy process management, profiles & ADB
-    ├── control_panel.py        # customtkinter control panel UI
-    ├── wireless_dialog.py      # customtkinter wireless connection dialog
-    ├── file_transfer_dialog.py # device ↔ local PC file transfer window
-    ├── device_profile.py       # DeviceProfile dataclass + built-in profiles
-    ├── custom_profile_store.py # user-defined profile persistence
-    ├── device_detection.py     # ADB device/display detection
-    ├── device_selector.py      # profile auto-match on launch
-    ├── device_profile_dialog.py / device_profile_editor.py  # profile UI
-    ├── ui_constants.py         # shared colours, fonts, icon loader
-    ├── platform_compat.py      # Linux shims (dark titlebar, clipboard, mss)
-    ├── presets.py              # layout preset store
-    ├── config.py               # config manager
-    ├── win32_dock.py / win32_darkmode.py   # Windows-only docking/titlebar
-    └── docking/
-        ├── x11.py              # X11 window docking (Linux)
-        └── stateless.py        # Wayland / no-op dock manager
-```
-
----
-
-## Bundled Software
-
-DualCPY-Linux can use locally bundled binaries from the `bin/` folder.
-On Linux, **system-installed packages are preferred** — the `bin/` folder is optional.
-
-- **scrcpy** by Genymobile/Romain Vimont — Apache License 2.0
-  Source: https://github.com/Genymobile/scrcpy
-
----
+### Running in a Distrobox container (Bazzite / immutable systems)
+DualCPY-Linux runs inside a [Distrobox](https://distrobox.it/) container on immutable
+systems. Install the system dependencies inside the container, create a venv, and run
+as above. Make sure the container can reach the host display (`DISPLAY`/`WAYLAND_DISPLAY`)
+and that `adb` can see your device.
 
 ## Licenses
 
-- This project is licensed under **GNU General Public License v3.0** — see `LICENSE`
-- [scrcpy](https://github.com/Genymobile/scrcpy) — Apache License 2.0
-- [Cal Sans](https://github.com/calcom/font) font — SIL Open Font License 1.1 (see `assets/fonts/OFL.txt`)
-
----
+- This project is licensed under the **GNU General Public License v3.0** — see
+  [LICENSE](LICENSE). You may modify and redistribute it under the same terms.
+- [scrcpy](https://github.com/Genymobile/scrcpy) is used as-is from your system under
+  the Apache License 2.0.
+- The in-app font is [Cal Sans](https://github.com/calcom/font), under the SIL Open
+  Font License 1.1 — see [assets/fonts/OFL.txt](assets/fonts/OFL.txt).
 
 ## Contributing
 
-Contributions are welcome! This is a Linux-specific fork maintained separately.
+- For **Linux-specific** bugs or features: open an issue in **this repository** on
+  [GitHub](https://github.com/DrSkyfaR/ThorCPY-Linux/issues).
+- For general **DualCPY** issues (Windows / upstream): see the
+  [upstream repository](https://github.com/theswest/DualCPY/issues).
 
-- For Linux-specific bugs or features: open an issue in **this repository** on [GitHub](https://github.com/DrSkyfaR/ThorCPY-Linux/issues)
-- For general ThorCPY issues (Windows / upstream): see the [upstream repository](https://github.com/theswest/ThorCPY/issues)
-
----
+Pull requests are welcome — for major changes, please open an issue first.
 
 ## Acknowledgements
 
-- **[the_swest](https://github.com/theswest)** — Original DualCPY (ThorCPY) author
-- **[eldermonkey](https://github.com/eldermonkey)** — Project logo
-- **[scrcpy](https://github.com/Genymobile/scrcpy)** by Romain Vimont — the backend that makes this all possible
-- **[Cal Sans](https://github.com/calcom/font)** by Cal.com Inc. — UI typography
-- **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** — UI toolkit
+- **[the_swest](https://github.com/theswest)** — original DualCPY (ThorCPY) author
+- **[DrSkyfaR](https://github.com/DrSkyfaR)** — File Transfer logic and the Linux port
+- **[tommywaaf](https://github.com/tommywaaf)** — backend performance work, FPS/restart
+  controls, title-barred undocked windows, and more
+- **[eldermonkey](https://github.com/eldermonkey)** — project logo
+- **[scrcpy](https://github.com/Genymobile/scrcpy)** by Romain Vimont — the backend
+- **[Cal Sans](https://github.com/calcom/font)** by Cal.com Inc. — UI typography (OFL 1.1)
+- **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** — modern UI toolkit
+- **[python-xlib](https://github.com/python-xlib/python-xlib)** — X11 window docking
+- All other contributors and testers!
+
+## Supporting
+
+Support the original author: https://ko-fi.com/theswest
