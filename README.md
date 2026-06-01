@@ -256,6 +256,11 @@ logging.basicConfig(
 - Docking requires X11. With XWayland present, DualCPY-Linux forces the X11 backend
   automatically; on **pure Wayland** only floating mode is available.
 
+### Graphical glitches
+- Toggle dock/undock a few times, or restart the application.
+- Try a wireless connection to rule out USB issues.
+- Check the logs for errors.
+
 ### Performance / stuttering
 - Reduce the global scale or lower the FPS in the control panel.
 - Close other resource-intensive applications; prefer a USB 3 port.
@@ -293,6 +298,10 @@ and that `adb` can see your device.
 
 Pull requests are welcome — for major changes, please open an issue first.
 
+## Supporting
+
+Support the original author: https://ko-fi.com/theswest
+
 ## Acknowledgements
 
 - **[the_swest](https://github.com/theswest)** — original DualCPY (ThorCPY) author
@@ -305,7 +314,3 @@ Pull requests are welcome — for major changes, please open an issue first.
 - **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** — modern UI toolkit
 - **[python-xlib](https://github.com/python-xlib/python-xlib)** — X11 window docking
 - All other contributors and testers, especially **dd**, **splain**, and everyone else who helped!
-
-## Supporting
-
-Support the original author: https://ko-fi.com/theswest
