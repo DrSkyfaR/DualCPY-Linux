@@ -1,4 +1,4 @@
-# ThorCPY Linux - Dual-screen scrcpy docking and control UI
+# DualCPY Linux - Dual-screen scrcpy docking and control UI
 # Copyright (C) 2026 the_swest
 # Contact: Github issues
 #
@@ -67,7 +67,7 @@ def show_loading_screen():
     ctk.set_default_color_theme("blue")
 
     splash = ctk.CTk()
-    splash.title("ThorCPY Loading...")
+    splash.title("DualCPY Loading...")
 
     window_width = 400
     window_height = 180
@@ -88,7 +88,7 @@ def show_loading_screen():
 
     ctk.CTkLabel(
         title_frame,
-        text="Thor",
+        text="Dual",
         font=make_font(45, "bold"),
         text_color=ACCENT_COLOUR,
     ).pack(side="left")
@@ -157,7 +157,7 @@ class CTkUI:
         ctk.set_default_color_theme("blue")
 
         self.window = ctk.CTk()
-        self.window.title("ThorCPY Control Panel")
+        self.window.title("DualCPY Control Panel")
         self.window.configure(fg_color=BG_COLOUR)
         self.window.minsize(360, 640)
 
@@ -235,7 +235,7 @@ class CTkUI:
 
         ctk.CTkLabel(
             title_row,
-            text="ThorCPY Control Panel",
+            text="DualCPY Control Panel",
             font=make_font(22, "bold"),
             text_color=TEXT_COLOUR,
         ).pack(side="left", padx=10)
@@ -681,15 +681,16 @@ class CTkUI:
             self.window.lift()
 
     def _on_file_browser(self):
-        """Open the device <-> local PC file browser."""
-        if not (self.l.scrcpy and self.l.scrcpy.adb_bin and self.l.scrcpy.serial):
+        """Open the device <-> local PC file transfer window."""
+        sm = self.l.scrcpy
+        if not (sm and sm.adb_bin and sm.serial):
             self.show_status("Connect a device first", "error")
             return
         try:
-            from src.file_browser_ui import open_file_browser
-            open_file_browser(self.window, self.l.scrcpy)
+            from src.file_transfer_dialog import FileTransferDialog
+            FileTransferDialog(self.window, sm.adb_bin, sm.serial).show()
         except Exception as e:
-            logger.error(f"File browser failed to open: {e}", exc_info=True)
+            logger.error(f"File transfer window failed to open: {e}", exc_info=True)
             self.show_status("File browser failed to open", "error")
 
     def _on_save_preset(self):
@@ -871,7 +872,7 @@ class CTkUI:
             left, top, width, height = geom
 
             os.makedirs("screenshots", exist_ok=True)
-            path = os.path.join("screenshots", f"thorcpy_{time.strftime('%Y%m%d_%H%M%S')}.png")
+            path = os.path.join("screenshots", f"dualcpy_{time.strftime('%Y%m%d_%H%M%S')}.png")
             logger.info(f"Capturing region {left},{top} {width}x{height} -> {path}")
 
             if grab_region_png(left, top, width, height, path):

@@ -1,4 +1,4 @@
-# ThorCPY – Dual-screen scrcpy docking and control UI for Windows
+# DualCPY – Dual-screen scrcpy docking and control UI for Windows
 # Copyright (C) 2026 the_swest
 # Contact: Github issues
 #
@@ -102,15 +102,15 @@ BOTTOM_BITRATE_SCALE = 24
 
 # AYN Thor Screen Constants
 TOP_SCREEN_DISPLAY_ID = "0"
-TOP_SCREEN_WINDOW_TITLE = "ThorCPY Top Screen"
+TOP_SCREEN_WINDOW_TITLE = "DualCPY Top Screen"
 BOTTOM_SCREEN_DISPLAY_ID = "4"
-BOTTOM_SCREEN_WINDOW_TITLE = "ThorCPY Bottom Screen"
+BOTTOM_SCREEN_WINDOW_TITLE = "DualCPY Bottom Screen"
 
 # PipeWire/PulseAudio virtual device names for Discord audio routing (Linux only)
-GAME_SINK_NAME = "thorcpy_game"
-GAME_SINK_DESCRIPTION = "ThorCPY_Game"
-COMBINED_SINK_NAME = "thorcpy_mic"
-COMBINED_SINK_DESCRIPTION = "ThorCPY_Discord_Mic"
+GAME_SINK_NAME = "dualcpy_game"
+GAME_SINK_DESCRIPTION = "DualCPY_Game"
+COMBINED_SINK_NAME = "dualcpy_mic"
+COMBINED_SINK_DESCRIPTION = "DualCPY_Discord_Mic"
 AUDIO_LOOPBACK_LATENCY_MS = 100
 
 # Timing delays for process management
@@ -932,6 +932,7 @@ class ScrcpyManager:
             bitrate_top,
             "--max-fps",
             top_fps,
+            "--gamepad=uhid",     # gamepad passthrough on the main screen
         ]
 
         # Audio only on the top window to avoid conflicts
@@ -941,6 +942,9 @@ class ScrcpyManager:
         else:
             logger.debug("Audio enabled for top window")
 
+        # Per-profile extra launch args, then any caller-supplied extras.
+        if self.profile.extra_scrcpy_args_top:
+            top_args += list(self.profile.extra_scrcpy_args_top)
         if extra_top_args:
             top_args += extra_top_args
             logger.debug(f"Extra top args: {extra_top_args}")
@@ -971,8 +975,12 @@ class ScrcpyManager:
                 "--no-audio",
                 "--max-fps",
                 bottom_fps,
+                "--gamepad=disabled",   # gamepad handled by the top screen only
             ]
 
+            # Per-profile extra launch args, then any caller-supplied extras.
+            if self.profile.extra_scrcpy_args_bottom:
+                bottom_args += list(self.profile.extra_scrcpy_args_bottom)
             if extra_bottom_args:
                 bottom_args += extra_bottom_args
                 logger.debug(f"Extra bottom args: {extra_bottom_args}")

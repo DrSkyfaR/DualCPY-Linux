@@ -34,8 +34,8 @@ class X11DockManager(DockManager):
                 event_mask=X.StructureNotifyMask | X.ExposureMask
             )
             # Set title
-            window.set_wm_name('ThorCPY Container')
-            window.set_wm_icon_name('ThorCPY')
+            window.set_wm_name('DualCPY Container')
+            window.set_wm_icon_name('DualCPY')
             
             # Map (show) it
             window.map()

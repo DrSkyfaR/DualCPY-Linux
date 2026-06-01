@@ -1,37 +1,61 @@
 # Changelog
 
-## [Unreleased]
-### Changed
-- **UI rewritten in customtkinter** for parity with the upstream Windows app —
-  replaces the previous pygame control panel (`src/ui_pygame.py` removed).
-  Native dark-themed control panel, sliders, presets, status, and dialogs
-- **Device profiles** — multi-device support ported from upstream
-  (`device_profile.py`, `custom_profile_store.py`); the scrcpy manager is now
-  profile-driven (screen geometry, display IDs, flip, launch delay). On startup
-  the connected device is auto-matched to a built-in/custom profile (AYN Thor
-  fallback), with an "Edit Device Profiles" editor for custom devices
-- customtkinter wireless dialog and device-profile dialogs (Linux-adapted:
-  dark-titlebar/clipboard/screenshot shims replace win32clipboard/dxcam/windll)
-- File browser re-implemented as a customtkinter window (`file_browser_ui.py`)
-  on the existing ADB backend; screenshots now use `mss` and save a PNG
+## 0.4.0 - 01-06-2026
+> Note: this project is now **DualCPY-Linux** (the upstream Windows project
+> ThorCPY was renamed to DualCPY). This release brings the Linux fork up to
+> parity with upstream 0.4, adapted throughout for Linux/X11.
+
 ### Added
-- Two-panel ADB file browser overlay (device <-> local PC) with transfer,
-  create folder, rename, delete, double-click navigation, keyboard control and
-  overwrite/delete confirmations
-- Configurable Max FPS in Settings (persisted to config, applied to the top
-  window; bottom window capped to <=60)
-### Changed (ported from upstream DualCPY 0.4, adapted for Linux)
-- Improved scrcpy launch parameters: explicit `--video-codec h264` with
-  low-latency `--video-codec-options` (operating-rate, bitrate-mode,
-  i-frame-interval, intra-refresh-period) plus `--no-mipmaps`, `--no-power-on`,
-  `--no-cleanup`, `--print-fps`; render driver stays `opengl` on Linux
-- Disable SDL render vsync (`SDL_RENDER_VSYNC=0`) so high-refresh monitors
-  don't drop frames against the 60 Hz stream
-- More resistant ADB device detection: retries with `kill-server` +
-  `start-server` between attempts to recover a stuck adb server
-- Best-effort scrcpy process priority bump via `os.setpriority` (Linux nice;
-  silently ignored without privileges) instead of the Windows HIGH_PRIORITY_CLASS
-- Build bundles as `--onedir` instead of `--onefile` for faster subsequent launches
+- **Complete UI rewrite in customtkinter** — a native dark-themed control panel
+  replacing the old pygame menu (layout sliders, presets, status, FPS selector,
+  restart button, dialogs)
+- **Multi-device support** — automatic ADB device detection and built-in
+  profiles (AYN Thor, RG DS, Pocket DS, Odin 3/2/2 Portal/2 Mini + RDS,
+  Retroid Pocket 6/G2/5/4 Pro + RDS). Per-device screen ratios computed on boot
+- **Custom device profiles** with an in-app profile editor, a device selector
+  on launch, and a remembered "last used profile" per device (in config)
+- **Per-profile custom scrcpy launch arguments** (`extra_scrcpy_args_top/bottom`)
+- **Gamepad passthrough** — `--gamepad=uhid` on the top screen, disabled on the
+  bottom
+- **File Transfer window** (adopted from upstream) — two-panel device ↔ local
+  PC transfers with file-type icons, quick-nav pills (local: Home/Desktop/…,
+  device: Internal/Download/DCIM/…), automatic SD-card detection, inline image
+  previews with metadata, and create-folder / rename / delete
+- **Configurable Max FPS** in the control panel (persisted; top window uses it,
+  bottom capped to ≤60)
+- **Configurable screen-launch delay** per profile for lower-powered devices
+- App icon used as the favicon across every window
+
+### Changed
+- **Rebranded ThorCPY-Linux → DualCPY-Linux**, including the new logo, window
+  titles, and app naming; version bumped to 0.4.0
+- **scrcpy launch tuning** — explicit `--video-codec h264` with low-latency
+  `--video-codec-options` (operating-rate, bitrate-mode, i-frame-interval,
+  intra-refresh-period), plus `--no-mipmaps`, `--no-power-on`, `--no-cleanup`,
+  `--print-fps`; render driver stays `opengl` on Linux
+- Disable SDL render vsync (`SDL_RENDER_VSYNC=0`) so high-refresh monitors don't
+  drop frames against the 60 Hz stream
+- More resistant ADB detection — retries with `kill-server` + `start-server`
+  between attempts to recover a stuck adb server
+- Best-effort scrcpy process priority via `os.setpriority` (Linux nice;
+  ignored without privileges) instead of the Windows HIGH_PRIORITY_CLASS
+- Rebuilt the wireless connection dialog in customtkinter
+- Shared UI constants moved to their own module; Thor-specific hardcoded
+  constants removed from `scrcpy_manager` so geometry is profile-driven
+- Windows-only APIs shimmed for Linux: screenshots via `mss` (was dxcam),
+  Tk clipboard (was win32clipboard), no-op dark titlebar (was windll); the
+  File Transfer drive list shows mount points instead of drive letters
+- Build bundles as `--onedir` instead of `--onefile` for faster relaunches
+
+### Removed
+- The pygame control panel (`src/ui_pygame.py`) and the `pygame` dependency
+
+### Bugfixes
+- Thread-safe Tk updates — background results (listings, transfers, wireless,
+  scan) are marshalled onto the Tk thread via queues, fixing intermittent
+  "main thread is not in main loop" crashes on Linux
+- File Transfer panels scroll over their rows; folder navigation uses a real
+  double-click event instead of fragile timing
 
 ## 0.3.0 - 18-03-2026
 ### Added

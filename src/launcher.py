@@ -90,7 +90,7 @@ class LayoutMode:
 
 class Launcher:
     """
-    Main window controller for ThorCPY
+    Main window controller for DualCPY
     Manages scrcpy instances, docking and undocking behabiour,
     UI rendering and event handling and configuration persistance
     """
@@ -519,7 +519,7 @@ class Launcher:
             self.ui.run()   # CTk mainloop; per-frame work runs via tick()
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received in main loop")
-            print("\n[INFO] Shutting down ThorCPY...")
+            print("\n[INFO] Shutting down DualCPY...")
         finally:
             self.stop()
 

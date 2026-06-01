@@ -1,4 +1,4 @@
-# ThorCPY Linux - Dual-screen scrcpy docking and control UI
+# DualCPY Linux - Dual-screen scrcpy docking and control UI
 # Copyright (C) 2026 the_swest
 # Contact: Github issues
 #
@@ -49,7 +49,46 @@ def resource_path(rel):
 
 
 ICON_PATH = resource_path("assets/icon.png")
+ICO_PATH  = resource_path("assets/icon.ico")
 FONT_PATH = resource_path("assets/fonts/CalSans-Regular.ttf")
+ICONS_DIR = resource_path("assets/icons")
+
+# Cache loaded icons so identical (name, size, kind) requests reuse one object.
+# This also keeps Tk PhotoImage references alive for the app's lifetime, which
+# Treeview rows and Labels require (Tk garbage-collects unreferenced images,
+# blanking the widget).
+_icon_cache = {}
+
+
+def load_icon(name, size=16, kind="tk"):
+    """Load ``assets/icons/<name>.png`` as a square icon of the given size.
+
+    kind="tk"  -> ImageTk.PhotoImage    (for tk.Label / ttk.Treeview rows)
+    kind="ctk" -> customtkinter.CTkImage (for CTkButton / CTkLabel)
+
+    Returns ``None`` when the file is missing or fails to load, so callers can
+    fall back to a plain text label until the asset is dropped in.
+    """
+    key = (name, size, kind)
+    if key in _icon_cache:
+        return _icon_cache[key]
+
+    path = os.path.join(ICONS_DIR, f"{name}.png")
+    if not os.path.exists(path):
+        return None
+
+    try:
+        from PIL import Image, ImageTk
+        img = Image.open(path).convert("RGBA")
+        if kind == "ctk":
+            obj = ctk.CTkImage(light_image=img, dark_image=img, size=(size, size))
+        else:
+            obj = ImageTk.PhotoImage(img.resize((size, size), Image.LANCZOS))
+        _icon_cache[key] = obj
+        return obj
+    except Exception as e:
+        logger.warning(f"Failed to load icon '{name}' from {path}: {e}")
+        return None
 
 
 def load_calsans():

@@ -1,4 +1,4 @@
-# ThorCPY - Dual-screen scrcpy docking and control UI for Windows
+# DualCPY - Dual-screen scrcpy docking and control UI for Windows
 # Copyright (C) 2026 the_swest
 # Contact: Github issues
 #
@@ -146,7 +146,7 @@ class Win32Dock(DockManager):
             wc = WNDCLASSEX()
             wc.cbSize        = ctypes.sizeof(WNDCLASSEX)
             wc.lpfnWndProc   = ctypes.cast(self._wndproc_ref, ctypes.c_void_p).value
-            wc.lpszClassName = "ThorCPYContainer"
+            wc.lpszClassName = "DualCPYContainer"
             wc.hInstance     = hinst
             wc.hbrBackground = ctypes.windll.gdi32.GetStockObject(BLACK_BRUSH)
             user32.RegisterClassExW(ctypes.byref(wc))
@@ -157,8 +157,8 @@ class Win32Dock(DockManager):
 
             hwnd = user32.CreateWindowExW(
                 WS_EX_CONTROLPARENT,
-                "ThorCPYContainer",
-                "ThorCPY",
+                "DualCPYContainer",
+                "DualCPY",
                 style,
                 int(x), int(y),
                 rect.right - rect.left,

@@ -1,4 +1,4 @@
-# ThorCPY - Dual-screen scrcpy docking and control UI for Windows and Linux
+# DualCPY - Dual-screen scrcpy docking and control UI for Windows and Linux
 # Copyright (C) 2026 the_swest
 # Contact: Github issues
 #
@@ -17,8 +17,8 @@
 
 # main.py
 
-__version__ = "0.3.0"
-__app_name__ = "ThorCPY"
+__version__ = "0.4.0"
+__app_name__ = "DualCPY-Linux"
 __author__ = "the_swest"
 __description__ = "AYN Thor screen mirroring and docking tool"
 
@@ -60,7 +60,7 @@ def setup_logging():
     )
     os.makedirs(log_dir, exist_ok=True)
 
-    log_file = os.path.join(log_dir, f"thorcpy_{time.strftime('%Y%m%d')}.log")
+    log_file = os.path.join(log_dir, f"dualcpy_{time.strftime('%Y%m%d')}.log")
 
     logging.basicConfig(
         level=logging.INFO,
@@ -97,8 +97,8 @@ def check_windows_version():
                 messagebox.showwarning(
                     "Windows 10 Detected - Known Issues",
                     f"WARNING: You are running Windows 10 (Build {build})\n\n"
-                    f"ThorCPY has been reported to have stability issues on Windows 10.\n"
-                    f"Restarting ThorCPY can sometimes fix small issues.\n"
+                    f"DualCPY has been reported to have stability issues on Windows 10.\n"
+                    f"Restarting DualCPY can sometimes fix small issues.\n"
                     f"For the best experience, please use Windows 11.\n\n"
                     f"Continue anyway?",
                 )
@@ -111,9 +111,9 @@ def check_windows_version():
                 print("=" * LOG_MULT)
                 print(f"You are running Windows 10 (Build {build})")
                 print("")
-                print("ThorCPY has known stability issues on Windows 10.")
+                print("DualCPY has known stability issues on Windows 10.")
                 print("")
-                print("Restarting ThorCPY can sometimes fix small issues")
+                print("Restarting DualCPY can sometimes fix small issues")
                 print("")
                 print("For the best experience, please use Windows 11.")
                 print("=" * LOG_MULT)
@@ -159,10 +159,10 @@ def check_runtime_structure():
 
     if missing:
         msg = (
-            f"ThorCPY failed to start.\n\n"
+            f"DualCPY failed to start.\n\n"
             f"Missing required folders:\n"
             f"{', '.join(missing)}\n\n"
-            f"ThorCPY must be installed with:\n"
+            f"DualCPY must be installed with:\n"
             f"bin/, config/, logs/\n\n"
             f"Please reinstall or extract the full build."
         )
@@ -170,7 +170,7 @@ def check_runtime_structure():
         # Log error and show fatal error, also print to console
         logger.critical(msg)
         print(msg)
-        show_fatal_error("ThorCPY Startup Error", msg)
+        show_fatal_error("DualCPY Startup Error", msg)
         sys.exit(1)
 
 
@@ -204,7 +204,7 @@ def log_system_info():
 
 def main():
     """
-    ThorCPY's main entry point
+    DualCPY's main entry point
     Sets up logging, checks windows version, runs folder checks, sets DPI awareness,
     creates the launcher instance and starts the UI.
     """
@@ -260,7 +260,7 @@ def main_with_signal_handling():
         print("\n[INFO] Interrupted by user")
         sys.exit(0)
     finally:
-        print("[INFO] ThorCPY shutdown complete")
+        print("[INFO] DualCPY shutdown complete")
 
 
 if __name__ == "__main__":

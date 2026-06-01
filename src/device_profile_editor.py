@@ -1,4 +1,4 @@
-# ThorCPY Linux - Dual-screen scrcpy docking and control UI
+# DualCPY Linux - Dual-screen scrcpy docking and control UI
 # Copyright (C) 2026 the_swest
 # Contact: Github issues
 #
