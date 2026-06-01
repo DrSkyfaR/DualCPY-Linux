@@ -53,8 +53,3 @@ bin/*.vbs
 # assets/screenshots/ folder is NOT ignored)
 /images/
 /screenshots/
-
-# Reference source from upstream Windows dev (not part of this repo)
-DualCPY-source-for-chris/
-dualcpy_files/
-*.zip
