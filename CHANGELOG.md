@@ -59,6 +59,15 @@
 - File Transfer panels scroll over their rows; folder navigation uses a real
   double-click event instead of fragile timing
 
+### Contributors
+- [@DrSkyfaR](https://github.com/DrSkyfaR) — File Transfer window and the Linux port
+- [@theswest](https://github.com/theswest) — File Transfer window; original DualCPY author
+- [@tommywaaf](https://github.com/tommywaaf) — FPS selector and restart button, title-barred
+  undocked windows, `--onedir` build, process priority, launch codec/parameter and video
+  codec options, bundled-binary location handling, ADB server retry logic, and the
+  redraw / re-dock optimizations
+- Thanks to all testers, especially **dd** and **splain**
+
 ## 0.3.0 - 18-03-2026
 ### Added
 - Wireless connection dialog with Quick Connect and Android 11+ pairing-code flow

@@ -304,7 +304,7 @@ Pull requests are welcome — for major changes, please open an issue first.
 - **[Cal Sans](https://github.com/calcom/font)** by Cal.com Inc. — UI typography (OFL 1.1)
 - **[customtkinter](https://github.com/TomSchimansky/CustomTkinter)** — modern UI toolkit
 - **[python-xlib](https://github.com/python-xlib/python-xlib)** — X11 window docking
-- All other contributors and testers!
+- All other contributors and testers, especially **dd**, **splain**, and everyone else who helped!
 
 ## Supporting
 
