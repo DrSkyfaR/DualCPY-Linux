@@ -49,9 +49,10 @@ bin/*.vbs
 *.bak
 ~*
 
-# Local screenshots / scratch images
-images/
-screenshots/
+# Local runtime screenshots / scratch images (root-anchored so the tracked
+# assets/screenshots/ folder is NOT ignored)
+/images/
+/screenshots/
 
 # Reference source from upstream Windows dev (not part of this repo)
 DualCPY-source-for-chris/
