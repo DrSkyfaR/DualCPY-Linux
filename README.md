@@ -115,7 +115,26 @@ sudo apt install git adb scrcpy python3-dev python3-xlib python3-venv build-esse
 ```
 > On older Debian, `scrcpy` may be available via backports.
 
-### Option 1: Run from Source (recommended)
+### Option 1: Install from the AUR (Arch / CachyOS / Manjaro)
+
+DualCPY-Linux is on the [AUR](https://aur.archlinux.org/packages/dualcpy-linux).
+With an AUR helper:
+
+```bash
+paru -S dualcpy-linux
+# or
+yay -S dualcpy-linux
+```
+
+This installs DualCPY system-wide and adds it to your application launcher.
+All dependencies (including `scrcpy`, `tk`, and `python-customtkinter`) are
+pulled in automatically. Launch it from your menu as **DualCPY**, or run
+`dualcpy-linux` from a terminal.
+
+> The AUR package is maintained by [@theswest](https://github.com/theswest).
+> Report packaging issues on the AUR page; report app bugs here.
+
+### Option 2: Run from Source (recommended for non-Arch users)
 ```bash
 git clone https://github.com/DrSkyfaR/DualCPY-Linux.git
 cd DualCPY-Linux
@@ -128,7 +147,7 @@ python main.py
 
 > Re-activate the venv (`source venv/bin/activate`) before running in later sessions.
 
-### Option 2: Build a Standalone Executable
+### Option 3: Build a Standalone Executable
 ```bash
 source venv/bin/activate
 pip install pyinstaller
