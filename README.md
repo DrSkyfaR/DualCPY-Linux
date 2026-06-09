@@ -106,12 +106,12 @@ launch via `pkexec` (pacman and apt-get supported).
 
 **Arch / Manjaro / CachyOS**
 ```bash
-sudo pacman -S git base-devel android-tools scrcpy python-xlib
+sudo pacman -S git base-devel android-tools scrcpy python-xlib tk
 ```
 
 **Debian / Ubuntu**
 ```bash
-sudo apt install git adb scrcpy python3-dev python3-xlib python3-venv build-essential
+sudo apt install git adb scrcpy python3-dev python3-xlib python3-venv build-essential tk
 ```
 > On older Debian, `scrcpy` may be available via backports.
 
@@ -124,6 +124,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 python main.py
 ```
+> Using fish or csh? Use the following activation script instead: `source venv/bin/activate.fish` (fish) or `activate.csh` (csh).
+
 > Re-activate the venv (`source venv/bin/activate`) before running in later sessions.
 
 ### Option 2: Build a Standalone Executable
